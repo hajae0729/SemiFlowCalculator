@@ -14,8 +14,8 @@
         }
         .main-flex {
             display: flex;
-            gap: 36px;
-            max-width: 1100px;
+            gap: 60px;
+            max-width: 1200px;
             min-width: 700px;
             margin: 32px auto 0 auto;
             background: #fff;
@@ -27,7 +27,7 @@
         .left-panel {
             flex: 1 1 0;
             min-width: 340px;
-            max-width: 520px;
+            max-width: 700px;
         }
         .right-panel {
             flex: 0 0 340px;
@@ -36,6 +36,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            align-self: flex-start;
+            margin-top: 0;
+        }
+        .button-row {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-bottom: 8px;
+            margin-top: 8px;
+            padding-right: 0;
+            padding-left: 24px;
         }
         h2 {
             margin-top: 0;
@@ -44,7 +56,7 @@
             color: #2563eb;
             font-weight: 700;
             letter-spacing: -1px;
-            text-align: center;
+            text-align: left;
         }
         .motion-svg-wrap {
             display: flex;
@@ -70,7 +82,13 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 0;
+            margin-bottom: 10px;
+        }
+        .grid2 > div:first-child {
+            padding-right: 18px;
+        }
+        .grid2 > div:last-child {
+            padding-left: 18px;
         }
         label {
             min-width: 90px;
@@ -153,7 +171,7 @@
             font-weight: bold;
         }
         .history-section {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 18px auto 0 auto;
             background: #fff;
             border-radius: 12px;
@@ -196,101 +214,89 @@
 <body>
 <div class="main-flex">
     <div class="left-panel">
-        <h2>TDI Takt Time 계산기</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h2 style="margin-bottom: 0;">TDI Takt Time 계산기</h2>
+            <!-- 왼쪽 패널 버튼 삭제 -->
+        </div>
         <form id="calcForm" autocomplete="off">
             <div class="form-section">
                 <div class="form-title">Motion Setting</div>
                 <div class="grid2">
-                    <div class="form-row"><label>가속도 [G]</label><input type="number" step="any" name="accel_g" value="0.3"></div>
-                    <div class="form-row"><label>가감속 거리 [mm]</label><input type="number" step="any" name="accel_dist" value="0"></div>
-                    <div class="form-row"><label>가속 시간 [sec]</label><input type="number" step="any" name="accel_time" value="0"></div>
-                    <div class="form-row"><label>Scan 등속 거리 [mm]</label><input type="number" step="any" name="scan_const_dist" value="0"></div>
-                    <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any" name="accel_margin" value="0"></div>
-                    <div class="form-row"><label>총 스캔 거리 [mm]</label><input type="number" step="any" name="scan_total_dist" value="0"></div>
-                    <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any" name="wafer_size" value="310"></div>
+                    <div>
+                        <div class="form-row"><label>가속도 [G]</label><input type="number" step="0.1" name="accel_g" value="0.3"></div>
+                        <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number" step="any" name="scan_speed" value="100"></div>
+                        <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any" name="accel_margin" value="0"></div>
+                        <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any" name="wafer_size" value="310"></div>
+                    </div>
+                    <div>
+                        <div class="form-row"><label>가감속 거리 [mm]</label><input type="number" step="any" name="accel_dist" value="0" readonly disabled></div>
+                        <div class="form-row"><label>가속 시간 [sec]</label><input type="number" step="any" name="accel_time" value="0" readonly disabled></div>
+                        <div class="form-row"><label>Scan 등속 거리 [mm]</label><input type="number" step="any" name="scan_const_dist" value="0" readonly disabled></div>
+                        <div class="form-row"><label>총 스캔 거리 [mm]</label><input type="number" step="any" name="scan_total_dist" value="0" readonly disabled></div>
+                    </div>
                 </div>
             </div>
             <div class="form-section">
                 <div class="form-title">Camera Setting</div>
                 <div class="grid2">
-                    <div class="form-row"><label>Camera Resolution [μm]</label><input type="number" step="any" name="camera_res" value="0.1875"></div>
-                    <div class="form-row"><label>Fov [pixel]</label><input type="number" step="any" name="fov_pixel" value="6000"></div>
-                    <div class="form-row"><label>Camera Frequence [KHz]</label><input type="number" step="any" name="camera_freq" value="1000"></div>
-                    <div class="form-row"><label>Scan Count</label><input type="number" step="any" name="scan_count" value="0"></div>
-                    <div class="form-row"><label>Safety Factor [%]</label><input type="number" step="any" name="safety_factor" value="90"></div>
-                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number" step="any" name="scan_speed" value="100"></div>
+                    <div>
+                        <div class="form-row"><label>Camera Resolution [μm]</label><input type="number" step="any" name="camera_res" value="0.1875"></div>
+                        <div class="form-row"><label>Camera Frequence [KHz]</label><input type="number" step="any" name="camera_freq" value="1000"></div>
+                        <div class="form-row"><label>Safety Factor [%]</label><input type="number" step="any" name="safety_factor" value="90"></div>
+                    </div>
+                    <div>
+                        <div class="form-row"><label>Fov [pixel]</label><input type="number" step="any" name="fov_pixel" value="6000"></div>
+                        <div class="form-row"><label>Scan Count</label><input type="number" step="any" name="scan_count" value="0" readonly disabled></div>
+                    </div>
                 </div>
             </div>
             <div class="form-section">
                 <div class="form-title">Process Setting</div>
                 <div class="grid2">
-                    <div class="form-row"><label>Scan Delay [sec]</label><input type="number" step="any" name="scan_delay" value="0.35"></div>
-                    <div class="form-row"><label>Wafer Align Scan Count</label><input type="number" step="any" name="wafer_align_scan_count" value="1"></div>
-                    <div class="form-row"><label>Process Delay [sec]</label><input type="number" step="any" name="process_delay" value="5"></div>
+                    <div>
+                        <div class="form-row"><label>Scan Delay [sec]</label><input type="number" step="any" name="scan_delay" value="0.35"></div>
+                        <div class="form-row"><label>Process Delay [sec]</label><input type="number" step="any" name="process_delay" value="5"></div>
+                    </div>
+                    <div>
+                        <div class="form-row"><label>Wafer Align Scan Count</label><input type="number" step="any" name="wafer_align_scan_count" value="1"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="btns">
-                <button type="button" onclick="calculate()">계산</button>
-                <button type="button" onclick="downloadExcel()">엑셀로 저장</button>
             </div>
         </form>
     </div>
     <div class="right-panel">
+        <div class="button-row">
+            <button type="button" onclick="saveHistory()">히스토리 저장</button>
+            <button type="button" onclick="downloadExcel()">엑셀로 저장</button>
+        </div>
         <div class="motion-svg-wrap">
-            <svg width="340" height="120" viewBox="0 0 340 120">
-                <!-- 스테이지(입체감, 그림자) -->
-                <ellipse cx="170" cy="55" rx="120" ry="28" fill="#b9fbc0" filter="url(#shadow)" />
-                <ellipse cx="170" cy="60" rx="120" ry="28" fill="#d1fae5" />
-                <!-- 웨이퍼(파랑, 그림자) -->
-                <ellipse cx="170" cy="60" rx="60" ry="24" fill="#60a5fa" filter="url(#wshadow)" />
-                <ellipse cx="170" cy="60" rx="60" ry="24" fill="#3b82f6" fill-opacity="0.25" />
-                <!-- 300mm 텍스트 -->
-                <text x="170" y="65" text-anchor="middle" font-size="15" fill="#222" font-weight="bold">300mm</text>
-                <!-- 가속/감속 구간 화살표 및 라벨 -->
-                <line x1="70" y1="100" x2="110" y2="100" stroke="#f59e42" stroke-width="3" marker-end="url(#arrow)" />
-                <line x1="230" y1="100" x2="270" y2="100" stroke="#f59e42" stroke-width="3" marker-end="url(#arrow)" />
-                <text x="90" y="115" text-anchor="middle" font-size="12" fill="#f59e42">가속</text>
-                <text x="250" y="115" text-anchor="middle" font-size="12" fill="#f59e42">감속</text>
-                <!-- 등속 구간(파랑) -->
-                <line x1="110" y1="100" x2="230" y2="100" stroke="#2563eb" stroke-width="5" />
-                <text x="170" y="115" text-anchor="middle" font-size="12" fill="#2563eb">등속</text>
-                <!-- 가속/감속 그래프(곡선) -->
-                <polyline points="70,110 110,80 230,80 270,110" fill="none" stroke="#f59e42" stroke-width="2.5" />
-                <!-- 그림자 필터 -->
-                <defs>
-                    <filter id="shadow" x="0" y="0" width="1.5" height="1.5">
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#a7f3d0"/>
-                    </filter>
-                    <filter id="wshadow" x="0" y="0" width="1.5" height="1.5">
-                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#60a5fa"/>
-                    </filter>
-                    <marker id="arrow" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth">
-                        <path d="M0,0 L8,4 L0,8" fill="#f59e42" />
-                    </marker>
-                </defs>
-            </svg>
+            <img src="ScanMotion_Image1.png" alt="Motion Diagram" style="width: 100%; max-width: 320px; display: block; margin: 0 auto;">
         </div>
         <div class="output-section">
             <div class="form-title">Full Scan</div>
             <div class="output-grid">
-                <div class="output-row"><label>Scan Time [sec]</label><input type="number" name="full_scan_time" id="full_scan_time" readonly></div>
-                <div class="output-row"><label>UPH</label><input type="number" name="full_uph" id="full_uph" readonly></div>
+                <div class="output-row"><label>Scan Time [sec]</label><input type="number" name="full_scan_time" id="full_scan_time" readonly disabled></div>
+                <div class="output-row"><label>UPH</label><input type="number" name="full_uph" id="full_uph" readonly disabled></div>
             </div>
             <div class="form-title" style="margin-top:12px;">Circle Scan</div>
             <div class="output-grid">
-                <div class="output-row"><label>Scan Time [sec]</label><input type="number" name="circle_scan_time" id="circle_scan_time" readonly></div>
-                <div class="output-row"><label>UPH</label><input type="number" name="circle_uph" id="circle_uph" readonly></div>
+                <div class="output-row"><label>Scan Time [sec]</label><input type="number" name="circle_scan_time" id="circle_scan_time" readonly disabled></div>
+                <div class="output-row"><label>UPH</label><input type="number" name="circle_uph" id="circle_uph" readonly disabled></div>
             </div>
         </div>
     </div>
 </div>
 <div class="history-section">
-    <div class="history-title">연산 히스토리</div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <div class="history-title">연산 히스토리</div>
+        <button type="button" onclick="clearHistory()" style="margin-left: 10px; padding: 4px 12px; font-size:0.95rem; background:#ef4444; color:#fff; border:none; border-radius:6px; cursor:pointer;">히스토리 삭제</button>
+    </div>
     <table class="history-table" id="historyTable">
         <thead>
             <tr>
                 <th>Datetime</th>
-                <th>Wafer Size</th>
+                <th>Camera Resolution</th>
+                <th>Camera Frequence</th>
                 <th>Scan Speed</th>
                 <th>ScanTime</th>
                 <th>UPH</th>
@@ -311,26 +317,48 @@ function calculate() {
     })
     .then(res => res.json())
     .then(result => {
+        if(result.accel_time !== undefined) document.getElementsByName('accel_time')[0].value = result.accel_time;
+        if(result.accel_dist !== undefined) document.getElementsByName('accel_dist')[0].value = result.accel_dist;
+        if(result.const_dist !== undefined) document.getElementsByName('scan_const_dist')[0].value = result.const_dist;
+        if(result.total_scan_dist !== undefined) document.getElementsByName('scan_total_dist')[0].value = result.total_scan_dist;
+        if(result.scan_count !== undefined) document.getElementsByName('scan_count')[0].value = result.scan_count;
         if(result.full_scan_time !== undefined) document.getElementById('full_scan_time').value = result.full_scan_time;
-        if(result.full_uph !== undefined) document.getElementById('full_uph').value = result.full_uph;
+        if(result.full_scan_uph !== undefined) document.getElementById('full_uph').value = result.full_scan_uph;
         if(result.circle_scan_time !== undefined) document.getElementById('circle_scan_time').value = result.circle_scan_time;
-        if(result.circle_uph !== undefined) document.getElementById('circle_uph').value = result.circle_uph;
-        // 히스토리 추가
+        if(result.circle_scan_uph !== undefined) document.getElementById('circle_uph').value = result.circle_scan_uph;
+        // 히스토리 추가는 saveHistory에서만 처리
+    });
+}
+
+function saveHistory() {
+    const form = document.getElementById('calcForm');
+    const data = Object.fromEntries(new FormData(form).entries());
+    fetch('/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(result => {
         const now = new Date();
+        // YYYY-MM-DD HH:mm:ss 포맷으로 변환
+        const pad = n => n.toString().padStart(2, '0');
+        const datetime = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
         historyList.unshift({
-            datetime: now.toLocaleString(),
-            wafer_size: data.wafer_size,
+            datetime: datetime,
+            camera_res: data.camera_res,
+            camera_freq: data.camera_freq,
             scan_speed: data.scan_speed,
             scan_time: result.full_scan_time,
-            uph: result.full_uph
+            uph: result.full_scan_uph
         });
         renderHistory();
     });
 }
 function renderHistory() {
     const tbody = document.getElementById('historyTable').querySelector('tbody');
-    tbody.innerHTML = historyList.map(h =>
-        `<tr><td>${h.datetime}</td><td>${h.wafer_size}</td><td>${h.scan_speed}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
+    tbody.innerHTML = historyList.map((h, i) =>
+        `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.camera_res}</td><td>${h.camera_freq}</td><td>${h.scan_speed}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
     ).join('');
 }
 function downloadExcel() {
@@ -352,6 +380,11 @@ function downloadExcel() {
         a.remove();
     });
 }
+function clearHistory() {
+    historyList = [];
+    renderHistory();
+    fetch('/clear_history', { method: 'POST' });
+}
 // 페이지 로드시 히스토리 불러오기
 window.onload = function() {
     fetch('/history')
@@ -360,7 +393,30 @@ window.onload = function() {
             historyList = list;
             renderHistory();
         });
+    // 모든 입력란에 input 이벤트 리스너 추가
+    document.querySelectorAll('#calcForm input').forEach(input => {
+        input.addEventListener('input', () => {
+            calculate();
+        });
+    });
 }
+// 히스토리 행 클릭 시 입력값 반영 기능 추가
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('historyTable').querySelector('tbody');
+    tbody.addEventListener('click', function(e) {
+        let tr = e.target.closest('tr');
+        if (!tr) return;
+        const idx = tr.getAttribute('data-idx');
+        const h = historyList[idx];
+        if (!h) return;
+        // 입력 폼에 값 반영
+        document.querySelector('input[name="camera_res"]').value = h.camera_res;
+        document.querySelector('input[name="camera_freq"]').value = h.camera_freq;
+        document.querySelector('input[name="scan_speed"]').value = h.scan_speed;
+        // 필요시 추가 입력값도 반영 (예: wafer_size 등)
+        calculate();
+    });
+});
 </script>
 </body>
 </html> 

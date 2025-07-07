@@ -12,49 +12,89 @@ history = []
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
-    data = request.json
+    data = request.json or {}
+    # 입력값 파싱
     wafer_size = float(data.get('wafer_size', 310))
     scan_speed = float(data.get('scan_speed', 100))
     accel_g = float(data.get('accel_g', 0.3))
-    accel_time = float(data.get('accel_time', 0))
-    accel_dist = float(data.get('accel_dist', 0))
-    scan_const_dist = float(data.get('scan_const_dist', 0))
-    scan_total_dist = float(data.get('scan_total_dist', 0))
-    # 구간별 시간 계산(예시)
-    accel_section = accel_dist if accel_dist > 0 else wafer_size * 0.1
-    decel_section = accel_section
-    const_section = wafer_size - accel_section - decel_section
-    accel_time_sec = accel_section / (scan_speed/2) if scan_speed else 0
-    const_time_sec = const_section / scan_speed if scan_speed else 0
-    decel_time_sec = decel_section / (scan_speed/2) if scan_speed else 0
-    full_scan_time = round(accel_time_sec + const_time_sec + decel_time_sec, 2)
-    uph = round(3600 / full_scan_time, 2) if full_scan_time else 0
-    # 원형 스캔: 내접 원 면적 비율만큼 시간 단축
-    # wafer_area = pi * r^2, circle_area = pi * (r/sqrt(2))^2 = wafer_area/2
-    wafer_area = math.pi * (wafer_size/2)**2
-    circle_area = wafer_area / 2
-    area_ratio = circle_area / wafer_area  # = 0.5
-    circle_scan_time = round(full_scan_time * area_ratio, 2)
-    circle_uph = round(3600 / circle_scan_time, 2) if circle_scan_time else 0
+    accel_offset = float(data.get('accel_margin', 0))
+    fov = float(data.get('fov_pixel', 6000))
+    camera_res = float(data.get('camera_res', 0.1875))
+    wafer_align_scan_count = int(data.get('wafer_align_scan_count', 1))
+    process_delay = float(data.get('process_delay', 5))
+    wafer_change_delay = float(data.get('wafer_change_delay', 13))
+    # C# 코드와 동일한 상수
+    UNIT = 1000
+    GRAVITY = 9.80665
+
+    # 가속 시간 (scanSpeed 단위 변환 필요)
+    def get_accel_time(acceleration, scan_speed):
+        if acceleration == 0:
+            return 0
+        return (scan_speed / UNIT) / (acceleration * GRAVITY)
+
+    # 가속 거리
+    def get_accel_distance(acceleration, scan_speed):
+        if acceleration == 0:
+            return 0
+        accel_time = get_accel_time(acceleration, scan_speed)
+        return 0.5 * acceleration * GRAVITY * (accel_time ** 2) * 1000
+
+    # 등속 거리
+    def get_constant_distance(wafer_size):
+        return wafer_size
+
+    # 총 스캔 거리
+    def get_total_scan_distance(accel_dist, wafer_size, accel_offset):
+        return (2 * accel_dist) + wafer_size + (2 * accel_offset)
+
+    # 실제 계산 적용
+    accel_time = get_accel_time(accel_g, scan_speed)
+    accel_dist = get_accel_distance(accel_g, scan_speed)
+    const_dist = get_constant_distance(wafer_size)
+    total_scan_dist = get_total_scan_distance(accel_dist, wafer_size, accel_offset)
+
+    # ScanCount 계산 (C#과 동일)
+    scan_count = math.ceil(wafer_size / (fov * camera_res / 1000)) + wafer_align_scan_count
+    # FullScanTime 계산 (C#과 동일)
+    full_scan_time = ((total_scan_dist * scan_count) / scan_speed + scan_count * 0.05) + process_delay
+    # FullScanUPH 계산 (C#과 동일)
+    full_scan_uph = 3600 / (full_scan_time + wafer_change_delay) if (full_scan_time + wafer_change_delay) else 0
+    # CircleScanTime, CircleScanUPH 계산 (C#과 동일)
+    circle_scan_time = full_scan_time * 0.95
+    circle_scan_uph = 3600 / (circle_scan_time + wafer_change_delay) if (circle_scan_time + wafer_change_delay) else 0
+
     # 히스토리 저장
     hist = {
         'datetime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'wafer_size': wafer_size,
         'scan_speed': scan_speed,
-        'scan_time': full_scan_time,
-        'uph': uph
+        'accel_time': round(accel_time, 4),
+        'accel_dist': round(accel_dist, 4),
+        'const_dist': round(const_dist, 4),
+        'total_scan_dist': round(total_scan_dist, 4),
+        'scan_count': scan_count,
+        'full_scan_time': round(full_scan_time, 4),
+        'full_scan_uph': round(full_scan_uph, 4),
+        'circle_scan_time': round(circle_scan_time, 4),
+        'circle_scan_uph': round(circle_scan_uph, 4)
     }
     history.insert(0, hist)
     return jsonify({
-        'full_scan_time': full_scan_time,
-        'full_uph': uph,
-        'circle_scan_time': circle_scan_time,
-        'circle_uph': circle_uph
+        'accel_time': round(accel_time, 4),
+        'accel_dist': round(accel_dist, 4),
+        'const_dist': round(const_dist, 4),
+        'total_scan_dist': round(total_scan_dist, 4),
+        'scan_count': scan_count,
+        'full_scan_time': round(full_scan_time, 4),
+        'full_scan_uph': round(full_scan_uph, 4),
+        'circle_scan_time': round(circle_scan_time, 4),
+        'circle_scan_uph': round(circle_scan_uph, 4)
     })
 
 @app.route('/download_excel', methods=['POST'])
 def download_excel():
-    data = request.json
+    data = request.json or {}
     df = pd.DataFrame([data])
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -66,6 +106,12 @@ def download_excel():
 def get_history():
     return jsonify(history)
 
+@app.route('/clear_history', methods=['POST'])
+def clear_history():
+    global history
+    history.clear()
+    return jsonify({'status': 'ok'})
+
 # 정적 파일 서빙
 @app.route('/')
 def root():
@@ -76,4 +122,4 @@ def static_proxy(path):
     return send_from_directory(app.static_folder, path)
 
 if __name__ == "__main__":
-    app.run(debug=True) 
+    app.run(debug=False, use_reloader=False) 
