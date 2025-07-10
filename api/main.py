@@ -64,22 +64,7 @@ def calculate():
     circle_scan_time = full_scan_time * 0.95
     circle_scan_uph = 3600 / (circle_scan_time + wafer_change_delay) if (circle_scan_time + wafer_change_delay) else 0
 
-    # 히스토리 저장
-    hist = {
-        'datetime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'wafer_size': wafer_size,
-        'scan_speed': scan_speed,
-        'accel_time': round(accel_time, 4),
-        'accel_dist': round(accel_dist, 4),
-        'const_dist': round(const_dist, 4),
-        'total_scan_dist': round(total_scan_dist, 4),
-        'scan_count': scan_count,
-        'full_scan_time': round(full_scan_time, 4),
-        'full_scan_uph': round(full_scan_uph, 4),
-        'circle_scan_time': round(circle_scan_time, 4),
-        'circle_scan_uph': round(circle_scan_uph, 4)
-    }
-    history.insert(0, hist)
+    # 히스토리 저장 코드 제거!
     return jsonify({
         'accel_time': round(accel_time, 4),
         'accel_dist': round(accel_dist, 4),
@@ -92,13 +77,35 @@ def calculate():
         'circle_scan_uph': round(circle_scan_uph, 4)
     })
 
+@app.route('/save_history', methods=['POST'])
+def save_history():
+    data = request.json or {}
+    hist = {
+        'datetime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'camera_res': data.get('camera_res'),
+        'camera_freq': data.get('camera_freq'),
+        'scan_speed': data.get('scan_speed'),
+        'accel_g': data.get('accel_g'),
+        'accel_margin': data.get('accel_margin'),
+        'wafer_size': data.get('wafer_size'),
+        'safety_factor': data.get('safety_factor'),
+        'scan_delay': data.get('scan_delay'),
+        'process_delay': data.get('process_delay'),
+        'wafer_align_scan_count': data.get('wafer_align_scan_count'),
+        'fov_pixel': data.get('fov_pixel'),
+        'scan_time': data.get('full_scan_time'),
+        'uph': data.get('full_scan_uph')
+    }
+    history.insert(0, hist)
+    return jsonify({'status': 'ok'})
+
 @app.route('/download_excel', methods=['POST'])
 def download_excel():
     data = request.json or {}
     df = pd.DataFrame([data])
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False)
+    # type: ignore
+    df.to_excel(output, index=False, engine='xlsxwriter')
     output.seek(0)
     return send_file(output, as_attachment=True, download_name="result.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
@@ -115,11 +122,15 @@ def clear_history():
 # 정적 파일 서빙
 @app.route('/')
 def root():
-    return send_from_directory(app.static_folder, 'index.html')
+    if app.static_folder:
+        return send_from_directory(app.static_folder, 'index.html')
+    return "Static folder not configured", 404
 
 @app.route('/<path:path>')
 def static_proxy(path):
-    return send_from_directory(app.static_folder, path)
+    if app.static_folder:
+        return send_from_directory(app.static_folder, path)
+    return "Static folder not configured", 404
 
 if __name__ == "__main__":
     app.run(debug=False, use_reloader=False) 

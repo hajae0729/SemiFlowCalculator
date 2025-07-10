@@ -1,0 +1,105 @@
+﻿<UserControl x:Class="SemiFlowCalculator.UI.CalcTDITakt_UI"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SemiFlowCalculator.UI"
+        mc:Ignorable="d"
+        d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Vertical">
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Camera Resolution [um] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Width="100" Height="25" Text="{Binding Parameters.CameraResolution, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Camera Frequence [Khz] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Width="100" Height="25" Text="{Binding Parameters.CameraFrequence, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Safety Factor [%] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Width="100" Height="25" Text="{Binding Parameters.SafetyFactor, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Scan Speed [mm/s] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Width="100" Height="25" Text="{Binding Parameters.ScanSpeed, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Fov [pixel] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Width="100" Height="25" Text="{Binding Parameters.Fov, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Scan Count  : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" IsEnabled="False" Width="100" Height="25" Text="{Binding Parameters.ScanCount, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                    <GroupBox Header="Full Scan">
+                        <StackPanel>
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Scan Time [sec] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" IsEnabled="False" Width="100" Height="25" Text="{Binding Parameters.FullScanTime, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="UPH : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" IsEnabled="False" Width="100" Height="25" Text="{Binding Parameters.FullScanUPH, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Circle Scan">
+                        <StackPanel>
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Scan Time [sec] : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" IsEnabled="False" Width="100" Height="25" Text="{Binding Parameters.CircleScanTime, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                            <Grid Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="UPH : " HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" IsEnabled="False" Width="100" Height="25" Text="{Binding Parameters.CircleScanUPH, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

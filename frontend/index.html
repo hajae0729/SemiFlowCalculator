@@ -44,14 +44,11 @@
             display: flex;
             justify-content: flex-end;
             gap: 12px;
-            margin-bottom: 8px;
-            margin-top: 8px;
-            padding-right: 0;
+            margin: 8px 0;
             padding-left: 24px;
         }
         h2 {
-            margin-top: 0;
-            margin-bottom: 16px;
+            margin: 0 0 16px 0;
             font-size: 1.4rem;
             color: #2563eb;
             font-weight: 700;
@@ -70,8 +67,7 @@
             font-size: 1.01rem;
             font-weight: 700;
             color: #2563eb;
-            margin-bottom: 4px;
-            margin-top: 10px;
+            margin: 10px 0 4px 0;
         }
         .grid2 {
             display: grid;
@@ -119,10 +115,6 @@
             background: #e5e7eb;
             color: #555;
             border: 1.2px solid #e5e7eb;
-        }
-        .btns {
-            text-align: center;
-            margin-top: 8px;
         }
         button {
             padding: 8px 18px;
@@ -216,7 +208,6 @@
     <div class="left-panel">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
             <h2 style="margin-bottom: 0;">TDI Takt Time 계산기</h2>
-            <!-- 왼쪽 패널 버튼 삭제 -->
         </div>
         <form id="calcForm" autocomplete="off">
             <div class="form-section">
@@ -295,9 +286,10 @@
         <thead>
             <tr>
                 <th>Datetime</th>
-                <th>Camera Resolution</th>
-                <th>Camera Frequence</th>
+                <th>가속도</th>
                 <th>Scan Speed</th>
+                <th>Wafer Size</th>
+                <th>Camera Res</th>
                 <th>ScanTime</th>
                 <th>UPH</th>
             </tr>
@@ -307,6 +299,7 @@
 </div>
 <script>
 let historyList = [];
+
 function calculate() {
     const form = document.getElementById('calcForm');
     const data = Object.fromEntries(new FormData(form).entries());
@@ -326,7 +319,6 @@ function calculate() {
         if(result.full_scan_uph !== undefined) document.getElementById('full_uph').value = result.full_scan_uph;
         if(result.circle_scan_time !== undefined) document.getElementById('circle_scan_time').value = result.circle_scan_time;
         if(result.circle_scan_uph !== undefined) document.getElementById('circle_uph').value = result.circle_scan_uph;
-        // 히스토리 추가는 saveHistory에서만 처리
     });
 }
 
@@ -340,27 +332,30 @@ function saveHistory() {
     })
     .then(res => res.json())
     .then(result => {
-        const now = new Date();
-        // YYYY-MM-DD HH:mm:ss 포맷으로 변환
-        const pad = n => n.toString().padStart(2, '0');
-        const datetime = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        historyList.unshift({
-            datetime: datetime,
-            camera_res: data.camera_res,
-            camera_freq: data.camera_freq,
-            scan_speed: data.scan_speed,
-            scan_time: result.full_scan_time,
-            uph: result.full_scan_uph
+        data.full_scan_time = result.full_scan_time;
+        data.full_scan_uph = result.full_scan_uph;
+        fetch('/save_history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(() => {
+            fetch('/history')
+                .then(res => res.json())
+                .then(list => {
+                    historyList = list;
+                    renderHistory();
+                });
         });
-        renderHistory();
     });
 }
+
 function renderHistory() {
     const tbody = document.getElementById('historyTable').querySelector('tbody');
     tbody.innerHTML = historyList.map((h, i) =>
-        `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.camera_res}</td><td>${h.camera_freq}</td><td>${h.scan_speed}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
+        `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.accel_g}</td><td>${h.scan_speed}</td><td>${h.wafer_size}</td><td>${h.camera_res}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
     ).join('');
 }
+
 function downloadExcel() {
     const form = document.getElementById('calcForm');
     const data = Object.fromEntries(new FormData(form).entries());
@@ -380,12 +375,13 @@ function downloadExcel() {
         a.remove();
     });
 }
+
 function clearHistory() {
     historyList = [];
     renderHistory();
     fetch('/clear_history', { method: 'POST' });
 }
-// 페이지 로드시 히스토리 불러오기
+
 window.onload = function() {
     fetch('/history')
         .then(res => res.json())
@@ -393,15 +389,13 @@ window.onload = function() {
             historyList = list;
             renderHistory();
         });
-    // 모든 입력란에 input 이벤트 리스너 추가
+    
     document.querySelectorAll('#calcForm input').forEach(input => {
         input.addEventListener('input', () => {
             calculate();
         });
     });
-}
-// 히스토리 행 클릭 시 입력값 반영 기능 추가
-document.addEventListener('DOMContentLoaded', function() {
+    
     const tbody = document.getElementById('historyTable').querySelector('tbody');
     tbody.addEventListener('click', function(e) {
         let tr = e.target.closest('tr');
@@ -409,14 +403,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const idx = tr.getAttribute('data-idx');
         const h = historyList[idx];
         if (!h) return;
-        // 입력 폼에 값 반영
-        document.querySelector('input[name="camera_res"]').value = h.camera_res;
-        document.querySelector('input[name="camera_freq"]').value = h.camera_freq;
-        document.querySelector('input[name="scan_speed"]').value = h.scan_speed;
-        // 필요시 추가 입력값도 반영 (예: wafer_size 등)
-        calculate();
+        
+        // 안전한 값 설정 (undefined 방지)
+        const setInputValue = (name, value) => {
+            const input = document.querySelector(`input[name="${name}"]`);
+            if (input && value !== undefined && value !== null) {
+                input.value = value;
+            }
+        };
+        
+        setInputValue('camera_res', h.camera_res);
+        setInputValue('camera_freq', h.camera_freq);
+        setInputValue('scan_speed', h.scan_speed);
+        setInputValue('accel_g', h.accel_g);
+        setInputValue('accel_margin', h.accel_margin);
+        setInputValue('wafer_size', h.wafer_size);
+        setInputValue('safety_factor', h.safety_factor);
+        setInputValue('scan_delay', h.scan_delay);
+        setInputValue('process_delay', h.process_delay);
+        setInputValue('wafer_align_scan_count', h.wafer_align_scan_count);
+        setInputValue('fov_pixel', h.fov_pixel);
+        
+        // 입력값 설정 후 계산 실행
+        setTimeout(() => {
+            calculate();
+        }, 100);
     });
-});
+}
 </script>
 </body>
 </html> 
