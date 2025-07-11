@@ -303,7 +303,7 @@ let historyList = [];
 function calculate() {
     const form = document.getElementById('calcForm');
     const data = Object.fromEntries(new FormData(form).entries());
-    fetch('/calculate', {
+    fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -325,7 +325,7 @@ function calculate() {
 function saveHistory() {
     const form = document.getElementById('calcForm');
     const data = Object.fromEntries(new FormData(form).entries());
-    fetch('/calculate', {
+    fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -334,12 +334,12 @@ function saveHistory() {
     .then(result => {
         data.full_scan_time = result.full_scan_time;
         data.full_scan_uph = result.full_scan_uph;
-        fetch('/save_history', {
+        fetch('/api/save_history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         }).then(() => {
-            fetch('/history')
+            fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
                     historyList = list;
@@ -359,7 +359,7 @@ function renderHistory() {
 function downloadExcel() {
     const form = document.getElementById('calcForm');
     const data = Object.fromEntries(new FormData(form).entries());
-    fetch('/download_excel', {
+    fetch('/api/download_excel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -379,11 +379,11 @@ function downloadExcel() {
 function clearHistory() {
     historyList = [];
     renderHistory();
-    fetch('/clear_history', { method: 'POST' });
+    fetch('/api/clear_history', { method: 'POST' });
 }
 
 window.onload = function() {
-    fetch('/history')
+    fetch('/api/history')
         .then(res => res.json())
         .then(list => {
             historyList = list;
