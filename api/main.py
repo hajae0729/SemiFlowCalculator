@@ -10,7 +10,7 @@ app = Flask(__name__, static_folder='../frontend', static_url_path='')
 # 메모리 히스토리 DB
 history = []
 
-@app.route('/calculate', methods=['POST'])
+@app.route('/api/calculate', methods=['POST'])
 def calculate():
     data = request.json or {}
     # 입력값 파싱
@@ -77,7 +77,7 @@ def calculate():
         'circle_scan_uph': round(circle_scan_uph, 4)
     })
 
-@app.route('/save_history', methods=['POST'])
+@app.route('/api/save_history', methods=['POST'])
 def save_history():
     data = request.json or {}
     hist = {
@@ -99,7 +99,7 @@ def save_history():
     history.insert(0, hist)
     return jsonify({'status': 'ok'})
 
-@app.route('/download_excel', methods=['POST'])
+@app.route('/api/download_excel', methods=['POST'])
 def download_excel():
     data = request.json or {}
     df = pd.DataFrame([data])
@@ -109,11 +109,11 @@ def download_excel():
     output.seek(0)
     return send_file(output, as_attachment=True, download_name="result.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-@app.route('/history', methods=['GET'])
+@app.route('/api/history', methods=['GET'])
 def get_history():
     return jsonify(history)
 
-@app.route('/clear_history', methods=['POST'])
+@app.route('/api/clear_history', methods=['POST'])
 def clear_history():
     global history
     history.clear()
