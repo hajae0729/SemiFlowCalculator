@@ -1,23 +1,12 @@
 {
   "version": 2,
   "builds": [
-      {
-          "src": "api/main.py",
-          "use": "@vercel/python"
-      }
+    { "src": "api/main.py", "use": "@vercel/python" },
+    { "src": "frontend/index.html", "use": "@vercel/static" }
   ],
-  "rewrites": [
-      {
-          "source": "/api/(.*)",
-          "destination": "/api/main.py"
-      },
-      {
-          "source": "/(.*\\.(ico|png|jpg|jpeg|gif|svg|css|js|webmanifest))",
-          "destination": "/project/public/$1"
-      },
-      {
-          "source": "/(.*)",
-          "destination": "/project/index.html"
-      }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/main.py" },
+    { "src": "/ScanMotion_Image1.png", "dest": "public/ScanMotion_Image1.png" },
+    { "src": "/(.*)", "dest": "frontend/index.html" }
   ]
 }
