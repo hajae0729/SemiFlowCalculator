@@ -15,7 +15,7 @@
         .main-flex {
             display: flex;
             gap: 60px;
-            max-width: 1400px;
+            max-width: 1200px;
             min-width: 800px;
             margin: 32px auto 0 auto;
             background: #fff;
@@ -163,7 +163,7 @@
             font-weight: bold;
         }
         .tab-container {
-            max-width: 1400px;
+            max-width: 1300px;
             margin: 32px auto 0 auto;
             background: #fff;
             border-radius: 16px;
@@ -204,7 +204,7 @@
             display: block;
         }
         .history-section {
-            max-width: 1400px;
+            max-width: 1300px;
             margin: 18px auto 0 auto;
             background: #fff;
             border-radius: 12px;
@@ -235,7 +235,7 @@
             max-height: 180px;
             overflow-y: auto;
         }
-        @media (max-width: 1400px) {
+        @media (max-width: 1300px) {
             .main-flex, .history-section, .tab-container { max-width: 99vw; min-width: 0; }
         }
         @media (max-width: 900px) {
@@ -329,10 +329,78 @@
     </div>
     
     <div id="area-tab" class="tab-content">
-        <div style="text-align: center; padding: 60px 20px;">
-            <h2 style="color: #2563eb; margin-bottom: 20px;">AREA 계산기</h2>
-            <p style="color: #64748b; font-size: 1.1rem;">AREA 계산 기능이 준비 중입니다.</p>
-            <p style="color: #94a3b8; margin-top: 10px;">곧 새로운 기능으로 업데이트될 예정입니다.</p>
+        <div class="main-flex">
+            <div class="left-panel">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h2 style="margin-bottom: 0;">AREA 계산기</h2>
+                </div>
+                <form id="areaCalcForm" autocomplete="off">
+                    <div class="form-section">
+                        <div class="form-title">Area Setting</div>
+                        <div class="grid2">
+                            <div>
+                                <div class="form-row"><label>Width [mm]</label><input type="number" step="any" name="area_width" value="100"></div>
+                                <div class="form-row"><label>Height [mm]</label><input type="number" step="any" name="area_height" value="100"></div>
+                                <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number" step="any" name="area_scan_speed" value="50"></div>
+                                <div class="form-row"><label>Overlap [%]</label><input type="number" step="any" name="area_overlap" value="10"></div>
+                            </div>
+                            <div>
+                                <div class="form-row"><label>Total Area [mm²]</label><input type="number" step="any" name="total_area" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Scan Lines</label><input type="number" step="any" name="scan_lines" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Scan Time [sec]</label><input type="number" step="any" name="area_scan_time" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Efficiency [%]</label><input type="number" step="any" name="area_efficiency" value="0" readonly disabled></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-title">Camera Setting</div>
+                        <div class="grid2">
+                            <div>
+                                <div class="form-row"><label>Camera Resolution [μm]</label><input type="number" step="any" name="area_camera_res" value="0.1875"></div>
+                                <div class="form-row"><label>Camera Frequence [KHz]</label><input type="number" step="any" name="area_camera_freq" value="1000"></div>
+                                <div class="form-row"><label>Safety Factor [%]</label><input type="number" step="any" name="area_safety_factor" value="90"></div>
+                            </div>
+                            <div>
+                                <div class="form-row"><label>Fov [pixel]</label><input type="number" step="any" name="area_fov_pixel" value="6000"></div>
+                                <div class="form-row"><label>Line Count</label><input type="number" step="any" name="area_line_count" value="0" readonly disabled></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-title">Process Setting</div>
+                        <div class="grid2">
+                            <div>
+                                <div class="form-row"><label>Scan Delay [sec]</label><input type="number" step="any" name="area_scan_delay" value="0.35"></div>
+                                <div class="form-row"><label>Process Delay [sec]</label><input type="number" step="any" name="area_process_delay" value="5"></div>
+                            </div>
+                            <div>
+                                <div class="form-row"><label>Wafer Change Delay [sec]</label><input type="number" step="any" name="area_wafer_change_delay" value="2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="right-panel">
+                <div class="button-row">
+                    <button type="button" onclick="saveAreaHistory()">히스토리 저장</button>
+                    <button type="button" onclick="downloadAreaExcel()">엑셀로 저장</button>
+                </div>
+                <div class="motion-svg-wrap">
+                    <img src="/public/ScanMotion_Image1.png" alt="Area Diagram" style="width: 100%; max-width: 320px; display: block; margin: 0 auto;">
+                </div>
+                <div class="output-section">
+                    <div class="form-title">Area Scan</div>
+                    <div class="output-grid">
+                        <div class="output-row"><label>Total Time [sec]</label><input type="number" name="area_total_time" id="area_total_time" readonly disabled></div>
+                        <div class="output-row"><label>UPH</label><input type="number" name="area_uph" id="area_uph" readonly disabled></div>
+                    </div>
+                    <div class="form-title" style="margin-top:12px;">Optimized Scan</div>
+                    <div class="output-grid">
+                        <div class="output-row"><label>Opt Time [sec]</label><input type="number" name="area_opt_time" id="area_opt_time" readonly disabled></div>
+                        <div class="output-row"><label>Opt UPH</label><input type="number" name="area_opt_uph" id="area_opt_uph" readonly disabled></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -356,15 +424,6 @@
         </thead>
         <tbody></tbody>
     </table>
-</div>
-    
-    <div id="area-tab" class="tab-content">
-        <div style="text-align: center; padding: 60px 20px;">
-            <h2 style="color: #2563eb; margin-bottom: 20px;">AREA 계산기</h2>
-            <p style="color: #64748b; font-size: 1.1rem;">AREA 계산 기능이 준비 중입니다.</p>
-            <p style="color: #94a3b8; margin-top: 10px;">곧 새로운 기능으로 업데이트될 예정입니다.</p>
-        </div>
-    </div>
 </div>
 <script>
 let historyList = [];
@@ -469,6 +528,89 @@ function clearHistory() {
     fetch('/api/clear_history', { method: 'POST' });
 }
 
+function calculateArea() {
+    const form = document.getElementById('areaCalcForm');
+    const data = Object.fromEntries(new FormData(form).entries());
+    
+    // 간단한 AREA 계산 로직 (실제로는 백엔드 API를 호출해야 함)
+    const width = parseFloat(data.area_width) || 0;
+    const height = parseFloat(data.area_height) || 0;
+    const scanSpeed = parseFloat(data.area_scan_speed) || 0;
+    const overlap = parseFloat(data.area_overlap) || 0;
+    
+    // 계산
+    const totalArea = width * height;
+    const effectiveHeight = height * (1 + overlap / 100);
+    const scanLines = Math.ceil(effectiveHeight / 10); // 10mm 간격으로 가정
+    const scanTime = (width * scanLines) / scanSpeed;
+    const efficiency = (totalArea / (width * effectiveHeight)) * 100;
+    
+    // 결과 업데이트
+    document.getElementsByName('total_area')[0].value = totalArea.toFixed(2);
+    document.getElementsByName('scan_lines')[0].value = scanLines;
+    document.getElementsByName('area_scan_time')[0].value = scanTime.toFixed(2);
+    document.getElementsByName('area_efficiency')[0].value = efficiency.toFixed(1);
+    
+    // Total Time과 UPH 계산
+    const processDelay = parseFloat(data.area_process_delay) || 0;
+    const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
+    const totalTime = scanTime + processDelay;
+    const uph = totalTime > 0 ? 3600 / (totalTime + waferChangeDelay) : 0;
+    
+    document.getElementById('area_total_time').value = totalTime.toFixed(2);
+    document.getElementById('area_uph').value = uph.toFixed(1);
+    
+    // Optimized values (간단한 최적화)
+    const optTime = totalTime * 0.9; // 10% 개선 가정
+    const optUph = optTime > 0 ? 3600 / (optTime + waferChangeDelay) : 0;
+    
+    document.getElementById('area_opt_time').value = optTime.toFixed(2);
+    document.getElementById('area_opt_uph').value = optUph.toFixed(1);
+}
+
+function saveAreaHistory() {
+    const form = document.getElementById('areaCalcForm');
+    const data = Object.fromEntries(new FormData(form).entries());
+    
+    // AREA 계산 실행
+    calculateArea();
+    
+    // 히스토리에 저장 (간단한 구현)
+    const historyItem = {
+        datetime: new Date().toLocaleString('ko-KR'),
+        width: data.area_width,
+        height: data.area_height,
+        scan_speed: data.area_scan_speed,
+        total_area: document.getElementsByName('total_area')[0].value,
+        scan_time: document.getElementById('area_total_time').value,
+        uph: document.getElementById('area_uph').value
+    };
+    
+    historyList.push(historyItem);
+    renderHistory();
+}
+
+function downloadAreaExcel() {
+    const form = document.getElementById('areaCalcForm');
+    const data = Object.fromEntries(new FormData(form).entries());
+    
+    // 간단한 CSV 다운로드 구현
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Width,Height,Scan Speed,Total Area,Scan Time,UPH\n"
+        + `${data.area_width},${data.area_height},${data.area_scan_speed},`
+        + `${document.getElementsByName('total_area')[0].value},`
+        + `${document.getElementById('area_total_time').value},`
+        + `${document.getElementById('area_uph').value}`;
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "area_result.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 window.onload = function() {
     fetch('/api/history')
         .then(res => res.json())
@@ -480,6 +622,12 @@ window.onload = function() {
     document.querySelectorAll('#calcForm input').forEach(input => {
         input.addEventListener('input', () => {
             calculate();
+        });
+    });
+    
+    document.querySelectorAll('#areaCalcForm input').forEach(input => {
+        input.addEventListener('input', () => {
+            calculateArea();
         });
     });
     
