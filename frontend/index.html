@@ -162,6 +162,47 @@
             color: #222;
             font-weight: bold;
         }
+        .tab-container {
+            max-width: 1200px;
+            margin: 32px auto 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(30, 60, 120, 0.10);
+            overflow: hidden;
+        }
+        .tab-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-button.active {
+            color: #2563eb;
+            background: #fff;
+            border-bottom-color: #2563eb;
+        }
+        .tab-button:hover:not(.active) {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .tab-content {
+            display: none;
+            padding: 24px 18px 18px 18px;
+        }
+        .tab-content.active {
+            display: block;
+        }
         .history-section {
             max-width: 1200px;
             margin: 18px auto 0 auto;
@@ -195,7 +236,7 @@
             overflow-y: auto;
         }
         @media (max-width: 1200px) {
-            .main-flex, .history-section { max-width: 99vw; min-width: 0; }
+            .main-flex, .history-section, .tab-container { max-width: 99vw; min-width: 0; }
         }
         @media (max-width: 900px) {
             .main-flex { flex-direction: column; gap: 10px; min-width: 0; }
@@ -204,11 +245,18 @@
     </style>
 </head>
 <body>
-<div class="main-flex">
-    <div class="left-panel">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <h2 style="margin-bottom: 0;">TDI Takt Time 계산기</h2>
-        </div>
+<div class="tab-container">
+    <div class="tab-header">
+        <button class="tab-button active" onclick="switchTab('tdi')">TDI</button>
+        <button class="tab-button" onclick="switchTab('area')">AREA</button>
+    </div>
+    
+    <div id="tdi-tab" class="tab-content active">
+        <div class="main-flex">
+            <div class="left-panel">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h2 style="margin-bottom: 0;">TDI Takt Time 계산기</h2>
+                </div>
         <form id="calcForm" autocomplete="off">
             <div class="form-section">
                 <div class="form-title">Motion Setting</div>
@@ -274,31 +322,58 @@
                 <div class="output-row"><label>Scan Time [sec]</label><input type="number" name="circle_scan_time" id="circle_scan_time" readonly disabled></div>
                 <div class="output-row"><label>UPH</label><input type="number" name="circle_uph" id="circle_uph" readonly disabled></div>
             </div>
+            </div>
+        </div>
+        <div class="history-section">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div class="history-title">연산 히스토리</div>
+                <button type="button" onclick="clearHistory()" style="margin-left: 10px; padding: 4px 12px; font-size:0.95rem; background:#ef4444; color:#fff; border:none; border-radius:6px; cursor:pointer;">히스토리 삭제</button>
+            </div>
+            <table class="history-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Datetime</th>
+                        <th>가속도</th>
+                        <th>Scan Speed</th>
+                        <th>Wafer Size</th>
+                        <th>Camera Res</th>
+                        <th>ScanTime</th>
+                        <th>UPH</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="area-tab" class="tab-content">
+        <div style="text-align: center; padding: 60px 20px;">
+            <h2 style="color: #2563eb; margin-bottom: 20px;">AREA 계산기</h2>
+            <p style="color: #64748b; font-size: 1.1rem;">AREA 계산 기능이 준비 중입니다.</p>
+            <p style="color: #94a3b8; margin-top: 10px;">곧 새로운 기능으로 업데이트될 예정입니다.</p>
         </div>
     </div>
 </div>
-<div class="history-section">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-        <div class="history-title">연산 히스토리</div>
-        <button type="button" onclick="clearHistory()" style="margin-left: 10px; padding: 4px 12px; font-size:0.95rem; background:#ef4444; color:#fff; border:none; border-radius:6px; cursor:pointer;">히스토리 삭제</button>
-    </div>
-    <table class="history-table" id="historyTable">
-        <thead>
-            <tr>
-                <th>Datetime</th>
-                <th>가속도</th>
-                <th>Scan Speed</th>
-                <th>Wafer Size</th>
-                <th>Camera Res</th>
-                <th>ScanTime</th>
-                <th>UPH</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</div>
 <script>
 let historyList = [];
+
+function switchTab(tabName) {
+    // 모든 탭 버튼에서 active 클래스 제거
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 모든 탭 콘텐츠에서 active 클래스 제거
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 선택된 탭 버튼에 active 클래스 추가
+    document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`).classList.add('active');
+    
+    // 선택된 탭 콘텐츠에 active 클래스 추가
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+}
 
 function calculate() {
     const form = document.getElementById('calcForm');
