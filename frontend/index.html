@@ -324,27 +324,39 @@
             </div>
             </div>
         </div>
-        <div class="history-section">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <div class="history-title">연산 히스토리</div>
-                <button type="button" onclick="clearHistory()" style="margin-left: 10px; padding: 4px 12px; font-size:0.95rem; background:#ef4444; color:#fff; border:none; border-radius:6px; cursor:pointer;">히스토리 삭제</button>
             </div>
-            <table class="history-table" id="historyTable">
-                <thead>
-                    <tr>
-                        <th>Datetime</th>
-                        <th>가속도</th>
-                        <th>Scan Speed</th>
-                        <th>Wafer Size</th>
-                        <th>Camera Res</th>
-                        <th>ScanTime</th>
-                        <th>UPH</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
         </div>
     </div>
+    
+    <div id="area-tab" class="tab-content">
+        <div style="text-align: center; padding: 60px 20px;">
+            <h2 style="color: #2563eb; margin-bottom: 20px;">AREA 계산기</h2>
+            <p style="color: #64748b; font-size: 1.1rem;">AREA 계산 기능이 준비 중입니다.</p>
+            <p style="color: #94a3b8; margin-top: 10px;">곧 새로운 기능으로 업데이트될 예정입니다.</p>
+        </div>
+    </div>
+</div>
+
+<div class="history-section">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <div class="history-title">연산 히스토리</div>
+        <button type="button" onclick="clearHistory()" style="margin-left: 10px; padding: 4px 12px; font-size:0.95rem; background:#ef4444; color:#fff; border:none; border-radius:6px; cursor:pointer;">히스토리 삭제</button>
+    </div>
+    <table class="history-table" id="historyTable">
+        <thead>
+            <tr>
+                <th>Datetime</th>
+                <th>가속도</th>
+                <th>Scan Speed</th>
+                <th>Wafer Size</th>
+                <th>Camera Res</th>
+                <th>ScanTime</th>
+                <th>UPH</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
     
     <div id="area-tab" class="tab-content">
         <div style="text-align: center; padding: 60px 20px;">
