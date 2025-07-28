@@ -408,7 +408,7 @@
                 </div>
             </div>
         </div>
-        <div id="area-tab" class="tab-content active">
+        <div id="area-tab" class="tab-content">
             <div class="main-flex">
                 <div class="left-panel">
                     <div
@@ -908,6 +908,9 @@
         }
 
         window.onload = function () {
+            // 초기 탭 상태 설정
+            currentHistoryList = tdiHistoryList;
+            
             fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
