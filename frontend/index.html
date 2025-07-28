@@ -914,7 +914,9 @@
             fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
-                    tdiHistoryList = list;
+                    // 서버 히스토리를 TDI와 AREA로 분리
+                    tdiHistoryList = list.filter(h => h.accel_g && !h.area_accel_g);
+                    areaHistoryList = list.filter(h => h.area_accel_g);
                     currentHistoryList = tdiHistoryList;
                     renderHistory();
                 })
