@@ -624,11 +624,18 @@
                 renderHistory();
             }
 
+            // 서버로 보낼 데이터에 계산된 결과값 추가
+            const serverData = {
+                ...data,
+                full_scan_time: scan_time,
+                full_scan_uph: uph
+            };
+
             // 서버가 있을 때만 API 호출
             fetch('/api/save_history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(serverData)
             }).catch(error => {
                 console.log('서버 히스토리 저장 실패 (로컬 모드):', error);
             });
@@ -876,11 +883,18 @@
                 renderHistory();
             }
 
+            // 서버로 보낼 데이터에 계산된 결과값 추가
+            const serverData = {
+                ...data,
+                area_full_scan_time: scan_time,
+                area_full_scan_uph: uph
+            };
+
             // 서버가 있을 때만 API 호출
             fetch('/api/save_area_history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(serverData)
             }).catch(error => {
                 console.log('서버 히스토리 저장 실패 (로컬 모드):', error);
             });
