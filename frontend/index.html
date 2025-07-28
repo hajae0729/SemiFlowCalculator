@@ -6,6 +6,7 @@
     <title>Semi Flow calculator Web</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Roboto', 'Noto Sans KR', sans-serif;
@@ -651,25 +652,51 @@
         function downloadPDF() {
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
-            fetch('/api/download_pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-                .then(res => res.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'result.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                })
-                .catch(error => {
-                    console.error('PDF 다운로드 실패:', error);
-                    alert('PDF 다운로드에 실패했습니다.');
+            const tdiTab = document.getElementById('tdi-tab'); // Get tab element
+            
+            // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
+            setTimeout(() => {
+                html2canvas(tdiTab, { // Capture screenshot
+                    useCORS: true,
+                    allowTaint: true,
+                    scale: 2, // 고해상도 고정
+                    backgroundColor: '#ffffff',
+                    width: tdiTab.scrollWidth, // 전체 너비 포함
+                    height: tdiTab.scrollHeight, // 전체 높이 포함
+                    scrollX: 0,
+                    scrollY: 0
+                }).then(canvas => {
+                    const screenshot = canvas.toDataURL('image/png');
+                    // 이미지 비율 정보 추가
+                    const imageRatio = canvas.height / canvas.width;
+                    fetch('/api/download_pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...data,
+                            screenshot: screenshot, // Include screenshot data
+                            imageRatio: imageRatio // Include image ratio
+                        })
+                    })
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'tdi_result.pdf'; // Changed filename
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    })
+                    .catch(error => {
+                        console.error('PDF 다운로드 실패:', error);
+                        alert('PDF 다운로드에 실패했습니다.');
+                    });
+                }).catch(error => {
+                    console.error('스크린샷 캡처 실패:', error);
+                    alert('스크린샷 캡처에 실패했습니다.');
                 });
+            }, 300); // 300ms 대기로 증가
         }
 
         function clearHistory() {
@@ -907,25 +934,51 @@
         function downloadAreaPDF() {
             const form = document.getElementById('areaCalcForm');
             const data = Object.fromEntries(new FormData(form).entries());
-            fetch('/api/download_area_pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-                .then(res => res.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'area_result.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                })
-                .catch(error => {
-                    console.error('PDF 다운로드 실패:', error);
-                    alert('PDF 다운로드에 실패했습니다.');
+            const areaTab = document.getElementById('area-tab'); // Get tab element
+            
+            // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
+            setTimeout(() => {
+                html2canvas(areaTab, { // Capture screenshot
+                    useCORS: true,
+                    allowTaint: true,
+                    scale: 2, // 고해상도 고정
+                    backgroundColor: '#ffffff',
+                    width: areaTab.scrollWidth, // 전체 너비 포함
+                    height: areaTab.scrollHeight, // 전체 높이 포함
+                    scrollX: 0,
+                    scrollY: 0
+                }).then(canvas => {
+                    const screenshot = canvas.toDataURL('image/png');
+                    // 이미지 비율 정보 추가
+                    const imageRatio = canvas.height / canvas.width;
+                    fetch('/api/download_area_pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...data,
+                            screenshot: screenshot, // Include screenshot data
+                            imageRatio: imageRatio // Include image ratio
+                        })
+                    })
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'area_result.pdf'; // Changed filename
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    })
+                    .catch(error => {
+                        console.error('PDF 다운로드 실패:', error);
+                        alert('PDF 다운로드에 실패했습니다.');
+                    });
+                }).catch(error => {
+                    console.error('스크린샷 캡처 실패:', error);
+                    alert('스크린샷 캡처에 실패했습니다.');
                 });
+            }, 300); // 300ms 대기로 증가
         }
 
         window.onload = function () {

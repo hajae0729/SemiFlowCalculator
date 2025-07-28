@@ -131,6 +131,9 @@ def save_area_history():
 @app.route('/api/download_pdf', methods=['POST'])
 def download_pdf():
     data = request.json or {}
+    screenshot_data = data.get('screenshot', '')
+    image_ratio = data.get('imageRatio', 1.0)  # 기본값 1.0 (정사각형)
+    
     # 데이터 파싱
     wafer_size = float(data.get('wafer_size', 310))
     scan_speed = float(data.get('scan_speed', 100))
@@ -185,6 +188,43 @@ def download_pdf():
     c.setFont("Helvetica-Bold", 16)
     c.drawString(1.5 * inch, 10.5 * inch, "Scanning Performance Report")
     
+    # 스크린샷이 있으면 먼저 추가
+    if screenshot_data and screenshot_data.strip():
+        try:
+            # base64 이미지 데이터 디코딩
+            if ',' in screenshot_data:
+                image_data = base64.b64decode(screenshot_data.split(',')[1])
+            else:
+                image_data = base64.b64decode(screenshot_data)
+            
+            # 임시 파일로 이미지 저장
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
+                temp_file.write(image_data)
+                temp_file.flush()
+                
+                # PDF 페이지 최대 너비 계산 (letter 크기 기준)
+                # letter 크기: 8.5 x 11 inch
+                # 좌우 여백: 1.5 inch씩
+                page_width = 8.5 * inch
+                left_margin = 1.5 * inch
+                right_margin = 1.5 * inch
+                max_width = page_width - left_margin - right_margin  # 5.5 inch
+                
+                # 이미지를 제목 아래에 배치 (PDF 최대 너비에 맞춰 비율 유지)
+                img_width = max_width
+                img_height = max_width * image_ratio
+                c.drawImage(temp_file.name, left_margin, 7 * inch, width=img_width, height=img_height)
+                
+                # 임시 파일 삭제
+                try:
+                    os.unlink(temp_file.name)
+                except:
+                    pass
+                    
+        except Exception as e:
+            print(f"TDI PDF 이미지 처리 중 오류: {e}")
+    
     # 통합 테이블 데이터 (입력 파라미터 + 결과값)
     data = [
         ["Category", "Parameter", "Value", "Unit"],
@@ -230,9 +270,9 @@ def download_pdf():
     table = Table(data, colWidths=[0.8 * inch, 2.2 * inch, 1.5 * inch, 0.8 * inch])
     table.setStyle(table_style)
 
-    # PDF 페이지에 테이블 추가
+    # PDF 페이지에 테이블 추가 (이미지 아래에 배치)
     table.wrapOn(c, 1.5 * inch, 10 * inch)
-    table.drawOn(c, 1.5 * inch, 2.5 * inch)
+    table.drawOn(c, 1.5 * inch, 0.5 * inch)
     
     c.save()
     pdf_output.seek(0)
@@ -242,6 +282,9 @@ def download_pdf():
 @app.route('/api/download_area_pdf', methods=['POST'])
 def download_area_pdf():
     data = request.json or {}
+    screenshot_data = data.get('screenshot', '')
+    image_ratio = data.get('imageRatio', 1.0)  # 기본값 1.0 (정사각형)
+    
     # AREA 데이터 파싱
     area_wafer_size = float(data.get('area_wafer_size', 310))
     area_scan_speed = float(data.get('area_scan_speed', 100))
@@ -301,6 +344,43 @@ def download_area_pdf():
     c.setFont("Helvetica-Bold", 16)
     c.drawString(1.5 * inch, 10.5 * inch, "Area Scanning Performance Report")
     
+    # 스크린샷이 있으면 먼저 추가
+    if screenshot_data and screenshot_data.strip():
+        try:
+            # base64 이미지 데이터 디코딩
+            if ',' in screenshot_data:
+                image_data = base64.b64decode(screenshot_data.split(',')[1])
+            else:
+                image_data = base64.b64decode(screenshot_data)
+            
+            # 임시 파일로 이미지 저장
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
+                temp_file.write(image_data)
+                temp_file.flush()
+                
+                # PDF 페이지 최대 너비 계산 (letter 크기 기준)
+                # letter 크기: 8.5 x 11 inch
+                # 좌우 여백: 1.5 inch씩
+                page_width = 8.5 * inch
+                left_margin = 1.5 * inch
+                right_margin = 1.5 * inch
+                max_width = page_width - left_margin - right_margin  # 5.5 inch
+                
+                # 이미지를 제목 아래에 배치 (PDF 최대 너비에 맞춰 비율 유지)
+                img_width = max_width
+                img_height = max_width * image_ratio
+                c.drawImage(temp_file.name, left_margin, 7 * inch, width=img_width, height=img_height)
+                
+                # 임시 파일 삭제
+                try:
+                    os.unlink(temp_file.name)
+                except:
+                    pass
+                    
+        except Exception as e:
+            print(f"AREA PDF 이미지 처리 중 오류: {e}")
+    
     # AREA 통합 테이블 데이터
     data = [
         ["Category", "Parameter", "Value", "Unit"],
@@ -348,9 +428,9 @@ def download_area_pdf():
     table = Table(data, colWidths=[0.8 * inch, 2.2 * inch, 1.5 * inch, 0.8 * inch])
     table.setStyle(table_style)
 
-    # PDF 페이지에 테이블 추가
+    # PDF 페이지에 테이블 추가 (이미지 아래에 배치)
     table.wrapOn(c, 1.5 * inch, 10 * inch)
-    table.drawOn(c, 1.5 * inch, 2.5 * inch)
+    table.drawOn(c, 1.5 * inch, 0.5 * inch)
     
     c.save()
     pdf_output.seek(0)
