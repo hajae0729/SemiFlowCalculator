@@ -877,7 +877,7 @@
             }
 
             // 서버가 있을 때만 API 호출
-            fetch('/api/save_history', {
+            fetch('/api/save_area_history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -914,7 +914,15 @@
             fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
-                    tdiHistoryList = list;
+                    // 서버 히스토리를 TDI와 AREA로 분리
+                    tdiHistoryList = list.filter(h => h.accel_g && !h.area_accel_g);
+                    areaHistoryList = list.filter(h => h.area_accel_g);
+                    
+                    // 필터링 결과가 없으면 전체 리스트를 TDI로 설정 (기존 동작 유지)
+                    if (tdiHistoryList.length === 0 && areaHistoryList.length === 0 && list.length > 0) {
+                        tdiHistoryList = list;
+                    }
+                    
                     currentHistoryList = tdiHistoryList;
                     renderHistory();
                 })

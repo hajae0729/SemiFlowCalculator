@@ -99,6 +99,28 @@ def save_history():
     history.insert(0, hist)
     return jsonify({'status': 'ok'})
 
+@app.route('/api/save_area_history', methods=['POST'])
+def save_area_history():
+    data = request.json or {}
+    hist = {
+        'datetime': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'area_camera_res': data.get('area_camera_res'),
+        'area_camera_freq': data.get('area_camera_freq'),
+        'area_scan_speed': data.get('area_scan_speed'),
+        'area_accel_g': data.get('area_accel_g'),
+        'area_accel_margin': data.get('area_accel_margin'),
+        'area_wafer_size': data.get('area_wafer_size'),
+        'area_fov_x': data.get('area_fov_x'),
+        'area_fov_y': data.get('area_fov_y'),
+        'area_scan_delay': data.get('area_scan_delay'),
+        'area_process_delay': data.get('area_process_delay'),
+        'area_wafer_change_delay': data.get('area_wafer_change_delay'),
+        'scan_time': data.get('area_full_scan_time'),
+        'uph': data.get('area_full_scan_uph')
+    }
+    history.insert(0, hist)
+    return jsonify({'status': 'ok'})
+
 @app.route('/api/download_excel', methods=['POST'])
 def download_excel():
     data = request.json or {}
