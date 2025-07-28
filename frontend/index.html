@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>TDI Takt Time Web</title>
+    <title>Semi Flow calculator Web</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -383,7 +383,7 @@
                 <div class="right-panel">
                     <div class="button-row">
                         <button type="button" onclick="saveHistory()">히스토리 저장</button>
-                        <button type="button" onclick="downloadExcel()">엑셀로 저장</button>
+                        <button type="button" onclick="downloadPDF()">PDF로 저장</button>
                     </div>
                     <div class="motion-svg-wrap">
                         <img src="/public/ScanMotion_Image1.png" alt="Motion Diagram"
@@ -482,7 +482,7 @@
                 <div class="right-panel">
                     <div class="button-row">
                         <button type="button" onclick="saveAreaHistory()">히스토리 저장</button>
-                        <button type="button" onclick="downloadAreaExcel()">엑셀로 저장</button>
+                        <button type="button" onclick="downloadAreaPDF()">PDF로 저장</button>
                     </div>
                     <div class="motion-svg-wrap">
                         <img src="/public/ScanMotion_Image1.png" alt="Area Diagram"
@@ -648,10 +648,10 @@
             ).join('');
         }
 
-        function downloadExcel() {
+        function downloadPDF() {
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
-            fetch('/api/download_excel', {
+            fetch('/api/download_pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -661,10 +661,14 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'result.xlsx';
+                    a.download = 'result.pdf';
                     document.body.appendChild(a);
                     a.click();
                     a.remove();
+                })
+                .catch(error => {
+                    console.error('PDF 다운로드 실패:', error);
+                    alert('PDF 다운로드에 실패했습니다.');
                 });
         }
 
@@ -900,25 +904,28 @@
             });
         }
 
-        function downloadAreaExcel() {
+        function downloadAreaPDF() {
             const form = document.getElementById('areaCalcForm');
             const data = Object.fromEntries(new FormData(form).entries());
-
-            // 간단한 CSV 다운로드 구현
-            const csvContent = "data:text/csv;charset=utf-8,"
-                + "Width,Height,Scan Speed,Total Area,Scan Time,UPH\n"
-                + `${data.area_width},${data.area_height},${data.area_scan_speed},`
-                + `${document.getElementsByName('total_area')[0].value},`
-                + `${document.getElementById('area_total_time').value},`
-                + `${document.getElementById('area_uph').value}`;
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "area_result.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            fetch('/api/download_area_pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'area_result.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(error => {
+                    console.error('PDF 다운로드 실패:', error);
+                    alert('PDF 다운로드에 실패했습니다.');
+                });
         }
 
         window.onload = function () {
