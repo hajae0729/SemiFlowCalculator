@@ -13,6 +13,29 @@
             background: #f4f8fb;
             margin: 0;
             padding: 0;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .contact-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.85rem;
+            color: rgba(107, 114, 128, 0.1);
+            text-align: right;
+            line-height: 1.4;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .contact-info:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: rgba(107, 114, 128, 0.9);
         }
 
         .main-flex {
@@ -306,6 +329,9 @@
 </head>
 
 <body>
+    <div class="contact-info">
+        문의사항: 선행모듈개발
+    </div>
     <div class="tab-container">
         <div class="tab-header">
             <button class="tab-button active" onclick="switchTab('tdi')">TDI</button>
