@@ -22,20 +22,32 @@
             bottom: 20px;
             right: 20px;
             font-size: 0.85rem;
-            color: rgba(107, 114, 128, 0.1);
+            color: rgba(107, 114, 128, 0.3);
             text-align: right;
             line-height: 1.4;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             padding: 8px 12px;
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            pointer-events: auto;
         }
 
         .contact-info:hover {
-            background: rgba(255, 255, 255, 0.9);
-            color: rgba(107, 114, 128, 0.9);
+            background: rgba(255, 255, 255, 0.8);
+            color: rgba(107, 114, 128, 0.8);
+        }
+
+        .contact-info:active {
+            background: rgba(255, 255, 255, 1);
+            color: rgba(107, 114, 128, 1);
+            transform: scale(0.95);
         }
 
         .main-flex {
@@ -329,7 +341,8 @@
 </head>
 
 <body>
-    <div class="contact-info">
+    <div class="contact-info" onclick="openTeamsChat()" onmousedown="this.style.transform='scale(0.95)'"
+        onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
         문의사항: 선행모듈개발
     </div>
     <div class="tab-container">
@@ -421,8 +434,8 @@
                         <div class="output-grid">
                             <div class="output-row"><label>Scan Time [sec]</label><input type="number"
                                     name="full_scan_time" id="full_scan_time" readonly disabled></div>
-                            <div class="output-row"><label>UPH</label><input type="number" name="full_uph"
-                                    id="full_uph" readonly disabled></div>
+                            <div class="output-row"><label>UPH</label><input type="number" name="full_uph" id="full_uph"
+                                    readonly disabled></div>
                         </div>
                         <div class="form-title" style="margin-top:12px;">Circle Scan</div>
                         <div class="output-grid">
@@ -679,7 +692,7 @@
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
             const tdiTab = document.getElementById('tdi-tab'); // Get tab element
-            
+
             // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
             setTimeout(() => {
                 html2canvas(tdiTab, { // Capture screenshot
@@ -704,20 +717,20 @@
                             imageRatio: imageRatio // Include image ratio
                         })
                     })
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'tdi_result.pdf'; // Changed filename
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    })
-                    .catch(error => {
-                        console.error('PDF 다운로드 실패:', error);
-                        alert('PDF 다운로드에 실패했습니다.');
-                    });
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'tdi_result.pdf'; // Changed filename
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        })
+                        .catch(error => {
+                            console.error('PDF 다운로드 실패:', error);
+                            alert('PDF 다운로드에 실패했습니다.');
+                        });
                 }).catch(error => {
                     console.error('스크린샷 캡처 실패:', error);
                     alert('스크린샷 캡처에 실패했습니다.');
@@ -961,7 +974,7 @@
             const form = document.getElementById('areaCalcForm');
             const data = Object.fromEntries(new FormData(form).entries());
             const areaTab = document.getElementById('area-tab'); // Get tab element
-            
+
             // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
             setTimeout(() => {
                 html2canvas(areaTab, { // Capture screenshot
@@ -986,20 +999,20 @@
                             imageRatio: imageRatio // Include image ratio
                         })
                     })
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'area_result.pdf'; // Changed filename
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    })
-                    .catch(error => {
-                        console.error('PDF 다운로드 실패:', error);
-                        alert('PDF 다운로드에 실패했습니다.');
-                    });
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'area_result.pdf'; // Changed filename
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        })
+                        .catch(error => {
+                            console.error('PDF 다운로드 실패:', error);
+                            alert('PDF 다운로드에 실패했습니다.');
+                        });
                 }).catch(error => {
                     console.error('스크린샷 캡처 실패:', error);
                     alert('스크린샷 캡처에 실패했습니다.');
@@ -1007,22 +1020,40 @@
             }, 300); // 300ms 대기로 증가
         }
 
+        function openTeamsChat() {
+            // Teams에서 특정 사용자와 채팅 열기
+            const userEmail = "jwha@ati2000.co.kr";
+
+            const encodedEmail = encodeURIComponent(userEmail);
+            const appUrl = `msteams:/l/chat/0/0?users=${encodedEmail}`;
+            const webTeamsUrl = `https://teams.microsoft.com/l/chat/0/0?users=${encodedEmail}`;
+
+            window.location.href = webTeamsUrl;
+            const timeout = setTimeout(() => {
+                // 앱 실행 실패 시 웹으로 fallback
+                window.location.href = webUrl;
+            }, 2000);
+
+            // 앱 실행 시도
+            window.location.href = appUrl;
+        }
+
         window.onload = function () {
             // 초기 탭 상태 설정
             currentHistoryList = tdiHistoryList;
-            
+
             fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
                     // 서버 히스토리를 TDI와 AREA로 분리
                     tdiHistoryList = list.filter(h => h.accel_g && !h.area_accel_g);
                     areaHistoryList = list.filter(h => h.area_accel_g);
-                    
+
                     // 필터링 결과가 없으면 전체 리스트를 TDI로 설정 (기존 동작 유지)
                     if (tdiHistoryList.length === 0 && areaHistoryList.length === 0 && list.length > 0) {
                         tdiHistoryList = list;
                     }
-                    
+
                     currentHistoryList = tdiHistoryList;
                     renderHistory();
                 })
