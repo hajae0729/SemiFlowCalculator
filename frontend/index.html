@@ -50,6 +50,19 @@
             transform: scale(0.95);
         }
 
+        /* 값 변경 알림을 위한 빨간색 테두리 스타일 */
+        .value-changed {
+            border: 2px solid #ef4444 !important;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.3) !important;
+            animation: valueChanged 0.5s ease-in-out;
+        }
+
+        @keyframes valueChanged {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
         .main-flex {
             display: flex;
             gap: 60px;
@@ -365,8 +378,8 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="0.1"
                                             name="accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
-                                            step="any" name="scan_speed" value="100"></div>
+                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="text"
+                                            name="scan_speed" value="100"></div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="accel_margin" value="0"></div>
                                     <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any"
@@ -462,8 +475,8 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="any"
                                             name="area_accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
-                                            step="any" name="area_scan_speed" value="100"></div>
+                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="text"
+                                            name="area_scan_speed" value="100"></div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="area_accel_margin" value="0"></div>
                                     <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any"
@@ -574,74 +587,175 @@
     <script>
         let tdiHistoryList = [];
         let areaHistoryList = [];
-        let currentHistoryList = tdiHistoryList; // 기본값은 TDI 히스토리
+        let currentHistoryList = tdiHistoryList;
+
+        // 공통 상수
+        const UNIT = 1000;
+        const GRAVITY = 9.80665;
+
+        // 공통 계산 함수들
+        function getAccelTime(acceleration, speed) {
+            if (acceleration === 0) return 0;
+            return (speed / UNIT) / (acceleration * GRAVITY);
+        }
+
+        function getAccelDistance(acceleration, speed) {
+            if (acceleration === 0) return 0;
+            const accelTime = getAccelTime(acceleration, speed);
+            return 0.5 * acceleration * GRAVITY * (accelTime ** 2) * 1000;
+        }
+
+        function getConstantDistance(size) {
+            return size;
+        }
+
+        function getTotalScanDistance(accelDist, size, accelOffset) {
+            return (2 * accelDist) + size + (2 * accelOffset);
+        }
+
+        // 값 변경 알림 함수
+        function showValueChanged(element) {
+            if (element) {
+                element.classList.add('value-changed');
+                setTimeout(() => {
+                    element.classList.remove('value-changed');
+                }, 2000);
+            }
+        }
+
+        // DOM 요소 값 설정 헬퍼 함수
+        function setElementValue(selector, value, isName = false) {
+            const element = isName ? 
+                document.getElementsByName(selector)[0] : 
+                document.getElementById(selector);
+            if (element && value !== undefined && value !== null) {
+                element.value = typeof value === 'number' ? value.toFixed(4) : value;
+            }
+        }
+
+        // 스캔 속도 제한 검증 함수
+        function validateScanSpeed(scanSpeedElement, maxSpeed) {
+            if (scanSpeedElement) {
+                const originalValue = parseFloat(scanSpeedElement.value) || 0;
+                if (Math.abs(originalValue - maxSpeed) > 0.01) {
+                    scanSpeedElement.value = maxSpeed;
+                    showValueChanged(scanSpeedElement);
+                }
+            }
+        }
 
         function switchTab(tabName) {
-            // 모든 탭 버튼에서 active 클래스 제거
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
             });
-
-            // 모든 탭 콘텐츠에서 active 클래스 제거
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
 
-            // 선택된 탭 버튼에 active 클래스 추가
             document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`).classList.add('active');
-
-            // 선택된 탭 콘텐츠에 active 클래스 추가
             document.getElementById(`${tabName}-tab`).classList.add('active');
 
-            // 히스토리 전환
-            if (tabName === 'tdi') {
-                currentHistoryList = tdiHistoryList;
-            } else if (tabName === 'area') {
-                currentHistoryList = areaHistoryList;
-            }
-
-            // 히스토리 테이블 업데이트
+            currentHistoryList = tabName === 'tdi' ? tdiHistoryList : areaHistoryList;
             renderHistory();
         }
 
-        function calculate() {
+
+
+        function calculateTDI() {
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
-            fetch('/api/calculate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-                .then(res => res.json())
-                .then(result => {
-                    if (result.accel_time !== undefined) document.getElementsByName('accel_time')[0].value = result.accel_time;
-                    if (result.accel_dist !== undefined) document.getElementsByName('accel_dist')[0].value = result.accel_dist;
-                    if (result.const_dist !== undefined) document.getElementsByName('scan_const_dist')[0].value = result.const_dist;
-                    if (result.total_scan_dist !== undefined) document.getElementsByName('scan_total_dist')[0].value = result.total_scan_dist;
-                    if (result.scan_count !== undefined) document.getElementsByName('scan_count')[0].value = result.scan_count;
-                    if (result.full_scan_time !== undefined) document.getElementById('full_scan_time').value = result.full_scan_time;
-                    if (result.full_scan_uph !== undefined) document.getElementById('full_uph').value = result.full_scan_uph;
-                    if (result.circle_scan_time !== undefined) document.getElementById('circle_scan_time').value = result.circle_scan_time;
-                    if (result.circle_scan_uph !== undefined) document.getElementById('circle_uph').value = result.circle_scan_uph;
-                })
-                .catch(error => {
-                    // 서버가 없을 때는 조용히 클라이언트 사이드 계산으로 대체
-                    calculateTDI();
-                });
+
+            const cameraRes = parseFloat(data.camera_res) || 0;
+            const cameraFreq = parseFloat(data.camera_freq) || 0;
+            const fovPixel = parseFloat(data.fov_pixel) || 0;
+            const safetyFactor = parseFloat(data.safety_factor) || 0;
+            const scanSpeed = Math.min(parseFloat(data.scan_speed) || 0, cameraRes * cameraFreq * (safetyFactor / 100));
+            
+            validateScanSpeed(document.getElementsByName('scan_speed')[0], scanSpeed);
+            
+            const accelG = parseFloat(data.accel_g) || 0;
+            const accelMargin = parseFloat(data.accel_margin) || 0;
+            const waferSize = parseFloat(data.wafer_size) || 0;
+            const scanDelay = parseFloat(data.scan_delay) || 0;
+            const processDelay = parseFloat(data.process_delay) || 0;
+            const waferAlignScanCount = parseFloat(data.wafer_align_scan_count) || 0;
+
+            const accelTime = getAccelTime(accelG, scanSpeed);
+            const accelDist = getAccelDistance(accelG, scanSpeed);
+            const constDist = getConstantDistance(waferSize);
+            const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
+
+            const scanCount = Math.ceil(waferSize / (fovPixel * cameraRes / 1000)) + waferAlignScanCount;
+            const fullScanTime = ((totalScanDist * scanCount) / scanSpeed + scanCount * 0.05) + processDelay;
+            const fullScanUph = 3600 / (fullScanTime + scanDelay);
+            const circleScanTime = fullScanTime * 0.95;
+            const circleScanUph = 3600 / (circleScanTime + scanDelay);
+
+            // 결과 업데이트
+            setElementValue('accel_time', accelTime, true);
+            setElementValue('accel_dist', accelDist, true);
+            setElementValue('scan_const_dist', constDist, true);
+            setElementValue('scan_total_dist', totalScanDist, true);
+            setElementValue('scan_count', scanCount, true);
+            setElementValue('full_scan_time', fullScanTime);
+            setElementValue('full_uph', fullScanUph);
+            setElementValue('circle_scan_time', circleScanTime);
+            setElementValue('circle_uph', circleScanUph);
+        }
+
+        function calculateArea() {
+            const form = document.getElementById('areaCalcForm');
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            const accelG = parseFloat(data.area_accel_g) || 0;
+            const accelMargin = parseFloat(data.area_accel_margin) || 0;
+            const waferSize = parseFloat(data.area_wafer_size) || 0;
+            const cameraRes = parseFloat(data.area_camera_res) || 0;
+            const cameraFreq = parseFloat(data.area_camera_freq) || 0;
+            const safetyFactor = parseFloat(data.area_safety_factor) || 0;
+            const fovX = parseFloat(data.area_fov_x) || 0;
+            const fovY = parseFloat(data.area_fov_y) || 0;
+            const scanDelay = parseFloat(data.area_scan_delay) || 0;
+            const processDelay = parseFloat(data.area_process_delay) || 0;
+            const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
+            const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraFreq / 1000) * (safetyFactor / 100));
+            validateScanSpeed(document.getElementsByName('area_scan_speed')[0], scanSpeed);
+
+            const accelTime = getAccelTime(accelG, scanSpeed);
+            const accelDist = getAccelDistance(accelG, scanSpeed);
+            const constDist = getConstantDistance(waferSize);
+            const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
+
+            const lineCount = Math.ceil((waferSize * 1000) / (cameraRes * fovX));
+            const scanCount = lineCount;
+
+            const lineScanTime = Math.ceil(totalScanDist - accelDist*2) / (scanSpeed * (safetyFactor / 100));
+            const fullScanTime = (accelTime * 2 + scanDelay) * scanCount + lineScanTime * scanCount + processDelay;
+            const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
+            const circleScanTime = fullScanTime * 0.95;
+            const circleScanUph = 3600 / (circleScanTime + waferChangeDelay);
+
+            // 결과 업데이트
+            setElementValue('area_accel_dist', accelDist, true);
+            setElementValue('area_accel_time', accelTime, true);
+            setElementValue('area_const_dist', constDist, true);
+            setElementValue('area_total_scan_dist', totalScanDist, true);
+            setElementValue('area_line_count', lineCount, true);
+            setElementValue('area_full_scan_time', fullScanTime);
+            setElementValue('area_full_scan_uph', fullScanUph);
+            setElementValue('area_circle_scan_time', circleScanTime);
+            setElementValue('area_circle_scan_uph', circleScanUph);
         }
 
         function saveHistory() {
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
 
-            // TDI 계산 실행 (클라이언트 사이드)
             calculateTDI();
 
-            // 직접 DOM에서 계산된 값들을 가져오기
             const scan_time = document.getElementById('full_scan_time').value;
             const uph = document.getElementById('full_uph').value;
 
-            // 클라이언트 사이드 히스토리 저장
             const historyItem = {
                 datetime: new Date().toLocaleString('ko-KR'),
                 accel_g: data.accel_g,
@@ -664,273 +778,24 @@
                 renderHistory();
             }
 
-            // 서버로 보낼 데이터에 계산된 결과값 추가
-            const serverData = {
-                ...data,
-                full_scan_time: scan_time,
-                full_scan_uph: uph
-            };
-
-            // 서버가 있을 때만 API 호출
             fetch('/api/save_history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(serverData)
+                body: JSON.stringify({ ...data, full_scan_time: scan_time, full_scan_uph: uph })
             }).catch(error => {
                 console.log('서버 히스토리 저장 실패 (로컬 모드):', error);
             });
-        }
-
-        function renderHistory() {
-            const tbody = document.getElementById('historyTable').querySelector('tbody');
-            tbody.innerHTML = currentHistoryList.map((h, i) =>
-                `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.accel_g || h.area_accel_g}</td><td>${h.scan_speed || h.area_scan_speed}</td><td>${h.wafer_size || h.area_wafer_size}</td><td>${h.camera_res || h.area_camera_res}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
-            ).join('');
-        }
-
-        function downloadPDF() {
-            const form = document.getElementById('calcForm');
-            const data = Object.fromEntries(new FormData(form).entries());
-            const tdiTab = document.getElementById('tdi-tab'); // Get tab element
-
-            // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
-            setTimeout(() => {
-                html2canvas(tdiTab, { // Capture screenshot
-                    useCORS: true,
-                    allowTaint: true,
-                    scale: 2, // 고해상도 고정
-                    backgroundColor: '#ffffff',
-                    width: tdiTab.scrollWidth, // 전체 너비 포함
-                    height: tdiTab.scrollHeight, // 전체 높이 포함
-                    scrollX: 0,
-                    scrollY: 0
-                }).then(canvas => {
-                    const screenshot = canvas.toDataURL('image/png');
-                    // 이미지 비율 정보 추가
-                    const imageRatio = canvas.height / canvas.width;
-                    fetch('/api/download_pdf', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            ...data,
-                            screenshot: screenshot, // Include screenshot data
-                            imageRatio: imageRatio // Include image ratio
-                        })
-                    })
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'tdi_result.pdf'; // Changed filename
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                        })
-                        .catch(error => {
-                            console.error('PDF 다운로드 실패:', error);
-                            alert('PDF 다운로드에 실패했습니다.');
-                        });
-                }).catch(error => {
-                    console.error('스크린샷 캡처 실패:', error);
-                    alert('스크린샷 캡처에 실패했습니다.');
-                });
-            }, 300); // 300ms 대기로 증가
-        }
-
-        function clearHistory() {
-            if (currentHistoryList === tdiHistoryList) {
-                tdiHistoryList = [];
-            } else {
-                areaHistoryList = [];
-            }
-            renderHistory();
-
-            // 서버가 있을 때만 API 호출
-            fetch('/api/clear_history', { method: 'POST' }).catch(error => {
-                console.log('서버 히스토리 삭제 실패 (로컬 모드):', error);
-            });
-        }
-
-        function calculateTDI() {
-            const form = document.getElementById('calcForm');
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            // TDI 계산 로직 (서버와 동일)
-            const cameraRes = parseFloat(data.camera_res) || 0;
-            const cameraFreq = parseFloat(data.camera_freq) || 0;
-            const scanSpeed = parseFloat(data.scan_speed) || 0;
-            const accelG = parseFloat(data.accel_g) || 0;
-            const accelMargin = parseFloat(data.accel_margin) || 0;
-            const waferSize = parseFloat(data.wafer_size) || 0;
-            const safetyFactor = parseFloat(data.safety_factor) || 0;
-            const scanDelay = parseFloat(data.scan_delay) || 0;
-            const processDelay = parseFloat(data.process_delay) || 0;
-            const waferAlignScanCount = parseFloat(data.wafer_align_scan_count) || 0;
-            const fovPixel = parseFloat(data.fov_pixel) || 0;
-
-            const UNIT = 1000;
-            const GRAVITY = 9.80665;
-
-            function getAccelTime(acceleration, speed) {
-                if (acceleration === 0) return 0;
-                return (speed / UNIT) / (acceleration * GRAVITY);
-            }
-
-            function getAccelDistance(acceleration, speed) {
-                if (acceleration === 0) return 0;
-                const accelTime = getAccelTime(acceleration, speed);
-                return 0.5 * acceleration * GRAVITY * (accelTime ** 2) * 1000;
-            }
-
-            function getConstantDistance(size) {
-                return size;
-            }
-
-            function getTotalScanDistance(accelDist, size, accelOffset) {
-                return (2 * accelDist) + size + (2 * accelOffset);
-            }
-
-            const accelTime = getAccelTime(accelG, scanSpeed);
-            const accelDist = getAccelDistance(accelG, scanSpeed);
-            const constDist = getConstantDistance(waferSize);
-            const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
-
-            const scanCount = Math.ceil(waferSize / (fovPixel * cameraRes / 1000)) + waferAlignScanCount;
-            const fullScanTime = ((totalScanDist * scanCount) / scanSpeed + scanCount * 0.05) + processDelay;
-            const fullScanUph = 3600 / (fullScanTime + scanDelay);
-            const circleScanTime = fullScanTime * 0.95;
-            const circleScanUph = 3600 / (circleScanTime + scanDelay);
-
-            // 결과 업데이트
-            if (document.getElementsByName('accel_time')[0]) {
-                document.getElementsByName('accel_time')[0].value = accelTime.toFixed(4);
-            }
-            if (document.getElementsByName('accel_dist')[0]) {
-                document.getElementsByName('accel_dist')[0].value = accelDist.toFixed(4);
-            }
-            if (document.getElementsByName('scan_const_dist')[0]) {
-                document.getElementsByName('scan_const_dist')[0].value = constDist.toFixed(4);
-            }
-            if (document.getElementsByName('scan_total_dist')[0]) {
-                document.getElementsByName('scan_total_dist')[0].value = totalScanDist.toFixed(4);
-            }
-            if (document.getElementsByName('scan_count')[0]) {
-                document.getElementsByName('scan_count')[0].value = scanCount;
-            }
-            if (document.getElementById('full_scan_time')) {
-                document.getElementById('full_scan_time').value = fullScanTime.toFixed(4);
-            }
-            if (document.getElementById('full_uph')) {
-                document.getElementById('full_uph').value = fullScanUph.toFixed(4);
-            }
-            if (document.getElementById('circle_scan_time')) {
-                document.getElementById('circle_scan_time').value = circleScanTime.toFixed(4);
-            }
-            if (document.getElementById('circle_uph')) {
-                document.getElementById('circle_uph').value = circleScanUph.toFixed(4);
-            }
-        }
-
-        function calculateArea() {
-            const form = document.getElementById('areaCalcForm');
-            const data = Object.fromEntries(new FormData(form).entries());
-
-            // AREA 계산 로직
-            const accelG = parseFloat(data.area_accel_g) || 0;
-            const scanSpeed = parseFloat(data.area_scan_speed) || 0;
-            const accelMargin = parseFloat(data.area_accel_margin) || 0;
-            const waferSize = parseFloat(data.area_wafer_size) || 0;
-            const cameraRes = parseFloat(data.area_camera_res) || 0;
-            const cameraFreq = parseFloat(data.area_camera_freq) || 0;
-            const safetyFactor = parseFloat(data.area_safety_factor) || 0;
-            const fovX = parseFloat(data.area_fov_x) || 0;
-            const fovY = parseFloat(data.area_fov_y) || 0;
-            const scanDelay = parseFloat(data.area_scan_delay) || 0;
-            const processDelay = parseFloat(data.area_process_delay) || 0;
-            const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
-
-            // TDI와 동일한 계산 로직 적용
-            const UNIT = 1000;
-            const GRAVITY = 9.80665;
-
-            function getAccelTime(acceleration, speed) {
-                if (acceleration === 0) return 0;
-                return (speed / UNIT) / (acceleration * GRAVITY);
-            }
-
-            function getAccelDistance(acceleration, speed) {
-                if (acceleration === 0) return 0;
-                const accelTime = getAccelTime(acceleration, speed);
-                return 0.5 * acceleration * GRAVITY * (accelTime ** 2) * 1000;
-            }
-
-            function getConstantDistance(size) {
-                return size;
-            }
-
-            function getTotalScanDistance(accelDist, size, accelOffset) {
-                return (2 * accelDist) + size + (2 * accelOffset);
-            }
-
-            const accelTime = getAccelTime(accelG, scanSpeed);
-            const accelDist = getAccelDistance(accelG, scanSpeed);
-            const constDist = getConstantDistance(waferSize);
-            const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
-
-            // Line Count 계산 (Wafer size * 1000 / (Camera Resolution * Fov X))
-            const lineCount = Math.ceil((waferSize * 1000) / (cameraRes * fovX));
-            const scanCount = lineCount; // scanCount를 lineCount로 설정
-
-            const lineScanTime = Math.ceil(waferSize / (cameraRes * fovY / 1000)) / (cameraFreq * (safetyFactor / 100));
-            // Scan Time 계산
-            const fullScanTime = (accelTime * 2 + scanDelay) * scanCount + lineScanTime * scanCount + processDelay;
-            const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
-            const circleScanTime = fullScanTime * 0.95;
-            const circleScanUph = 3600 / (circleScanTime + waferChangeDelay);
-
-            // 결과 업데이트
-            if (document.getElementsByName('area_accel_dist')[0]) {
-                document.getElementsByName('area_accel_dist')[0].value = accelDist.toFixed(4);
-            }
-            if (document.getElementsByName('area_accel_time')[0]) {
-                document.getElementsByName('area_accel_time')[0].value = accelTime.toFixed(4);
-            }
-            if (document.getElementsByName('area_const_dist')[0]) {
-                document.getElementsByName('area_const_dist')[0].value = constDist.toFixed(4);
-            }
-            if (document.getElementsByName('area_total_scan_dist')[0]) {
-                document.getElementsByName('area_total_scan_dist')[0].value = totalScanDist.toFixed(4);
-            }
-            if (document.getElementsByName('area_line_count')[0]) {
-                document.getElementsByName('area_line_count')[0].value = lineCount;
-            }
-            if (document.getElementById('area_full_scan_time')) {
-                document.getElementById('area_full_scan_time').value = fullScanTime.toFixed(4);
-            }
-            if (document.getElementById('area_full_scan_uph')) {
-                document.getElementById('area_full_scan_uph').value = fullScanUph.toFixed(4);
-            }
-            if (document.getElementById('area_circle_scan_time')) {
-                document.getElementById('area_circle_scan_time').value = circleScanTime.toFixed(4);
-            }
-            if (document.getElementById('area_circle_scan_uph')) {
-                document.getElementById('area_circle_scan_uph').value = circleScanUph.toFixed(4);
-            }
         }
 
         function saveAreaHistory() {
             const form = document.getElementById('areaCalcForm');
             const data = Object.fromEntries(new FormData(form).entries());
 
-            // AREA 계산 실행 (클라이언트 사이드)
             calculateArea();
 
-            // 직접 DOM에서 계산된 값들을 가져오기
             const scan_time = document.getElementById('area_full_scan_time').value;
             const uph = document.getElementById('area_full_scan_uph').value;
 
-            // 클라이언트 사이드 히스토리 저장
             const historyItem = {
                 datetime: new Date().toLocaleString('ko-KR'),
                 area_accel_g: data.area_accel_g,
@@ -953,50 +818,62 @@
                 renderHistory();
             }
 
-            // 서버로 보낼 데이터에 계산된 결과값 추가
-            const serverData = {
-                ...data,
-                area_full_scan_time: scan_time,
-                area_full_scan_uph: uph
-            };
-
-            // 서버가 있을 때만 API 호출
             fetch('/api/save_area_history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(serverData)
+                body: JSON.stringify({ ...data, area_full_scan_time: scan_time, area_full_scan_uph: uph })
             }).catch(error => {
                 console.log('서버 히스토리 저장 실패 (로컬 모드):', error);
             });
         }
 
-        function downloadAreaPDF() {
-            const form = document.getElementById('areaCalcForm');
-            const data = Object.fromEntries(new FormData(form).entries());
-            const areaTab = document.getElementById('area-tab'); // Get tab element
+        function renderHistory() {
+            const tbody = document.getElementById('historyTable').querySelector('tbody');
+            tbody.innerHTML = currentHistoryList.map((h, i) =>
+                `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.accel_g || h.area_accel_g}</td><td>${h.scan_speed || h.area_scan_speed}</td><td>${h.wafer_size || h.area_wafer_size}</td><td>${h.camera_res || h.area_camera_res}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
+            ).join('');
+        }
 
-            // 캡쳐 전 잠시 대기 (렌더링 완료 대기)
+        function clearHistory() {
+            if (currentHistoryList === tdiHistoryList) {
+                tdiHistoryList = [];
+            } else {
+                areaHistoryList = [];
+            }
+            renderHistory();
+
+            fetch('/api/clear_history', { method: 'POST' }).catch(error => {
+                console.log('서버 히스토리 삭제 실패 (로컬 모드):', error);
+            });
+        }
+
+        // PDF 다운로드 공통 함수
+        function downloadPDFCommon(formId, tabId, apiEndpoint, filename) {
+            const form = document.getElementById(formId);
+            const data = Object.fromEntries(new FormData(form).entries());
+            const tab = document.getElementById(tabId);
+
             setTimeout(() => {
-                html2canvas(areaTab, { // Capture screenshot
+                html2canvas(tab, {
                     useCORS: true,
                     allowTaint: true,
-                    scale: 2, // 고해상도 고정
+                    scale: 2,
                     backgroundColor: '#ffffff',
-                    width: areaTab.scrollWidth, // 전체 너비 포함
-                    height: areaTab.scrollHeight, // 전체 높이 포함
+                    width: tab.scrollWidth,
+                    height: tab.scrollHeight,
                     scrollX: 0,
                     scrollY: 0
                 }).then(canvas => {
                     const screenshot = canvas.toDataURL('image/png');
-                    // 이미지 비율 정보 추가
                     const imageRatio = canvas.height / canvas.width;
-                    fetch('/api/download_area_pdf', {
+                    
+                    fetch(apiEndpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             ...data,
-                            screenshot: screenshot, // Include screenshot data
-                            imageRatio: imageRatio // Include image ratio
+                            screenshot: screenshot,
+                            imageRatio: imageRatio
                         })
                     })
                         .then(res => res.blob())
@@ -1004,7 +881,7 @@
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = 'area_result.pdf'; // Changed filename
+                            a.download = filename;
                             document.body.appendChild(a);
                             a.click();
                             a.remove();
@@ -1017,39 +894,73 @@
                     console.error('스크린샷 캡처 실패:', error);
                     alert('스크린샷 캡처에 실패했습니다.');
                 });
-            }, 300); // 300ms 대기로 증가
+            }, 300);
+        }
+
+        function downloadPDF() {
+            downloadPDFCommon('calcForm', 'tdi-tab', '/api/download_pdf', 'tdi_result.pdf');
+        }
+
+        function downloadAreaPDF() {
+            downloadPDFCommon('areaCalcForm', 'area-tab', '/api/download_area_pdf', 'area_result.pdf');
         }
 
         function openTeamsChat() {
-            // Teams에서 특정 사용자와 채팅 열기
             const userEmail = "jwha@ati2000.co.kr";
-
             const encodedEmail = encodeURIComponent(userEmail);
-            const appUrl = `msteams:/l/chat/0/0?users=${encodedEmail}`;
             const webTeamsUrl = `https://teams.microsoft.com/l/chat/0/0?users=${encodedEmail}`;
+            window.open(webTeamsUrl, '_blank');
+        }
 
-            window.location.href = webTeamsUrl;
-            const timeout = setTimeout(() => {
-                // 앱 실행 실패 시 웹으로 fallback
-                window.location.href = webUrl;
-            }, 2000);
+        // 히스토리 클릭 이벤트 처리
+        function handleHistoryClick(h) {
+            const setInputValue = (name, value) => {
+                const input = document.querySelector(`input[name="${name}"]`);
+                if (input && value !== undefined && value !== null) {
+                    input.value = value;
+                }
+            };
 
-            // 앱 실행 시도
-            window.location.href = appUrl;
+            if (currentHistoryList === tdiHistoryList) {
+                setInputValue('camera_res', h.camera_res);
+                setInputValue('camera_freq', h.camera_freq);
+                setInputValue('scan_speed', h.scan_speed);
+                setInputValue('accel_g', h.accel_g);
+                setInputValue('accel_margin', h.accel_margin);
+                setInputValue('wafer_size', h.wafer_size);
+                setInputValue('safety_factor', h.safety_factor);
+                setInputValue('scan_delay', h.scan_delay);
+                setInputValue('process_delay', h.process_delay);
+                setInputValue('wafer_align_scan_count', h.wafer_align_scan_count);
+                setInputValue('fov_pixel', h.fov_pixel);
+
+                setTimeout(() => calculateTDI(), 100);
+            } else {
+                setInputValue('area_camera_res', h.area_camera_res);
+                setInputValue('area_camera_freq', h.area_camera_freq);
+                setInputValue('area_scan_speed', h.area_scan_speed);
+                setInputValue('area_accel_g', h.area_accel_g);
+                setInputValue('area_accel_margin', h.area_accel_margin);
+                setInputValue('area_wafer_size', h.area_wafer_size);
+                setInputValue('area_fov_x', h.area_fov_x);
+                setInputValue('area_fov_y', h.area_fov_y);
+                setInputValue('area_scan_delay', h.area_scan_delay);
+                setInputValue('area_process_delay', h.area_process_delay);
+                setInputValue('area_wafer_change_delay', h.area_wafer_change_delay);
+
+                setTimeout(() => calculateArea(), 100);
+            }
         }
 
         window.onload = function () {
-            // 초기 탭 상태 설정
             currentHistoryList = tdiHistoryList;
 
             fetch('/api/history')
                 .then(res => res.json())
                 .then(list => {
-                    // 서버 히스토리를 TDI와 AREA로 분리
                     tdiHistoryList = list.filter(h => h.accel_g && !h.area_accel_g);
                     areaHistoryList = list.filter(h => h.area_accel_g);
 
-                    // 필터링 결과가 없으면 전체 리스트를 TDI로 설정 (기존 동작 유지)
                     if (tdiHistoryList.length === 0 && areaHistoryList.length === 0 && list.length > 0) {
                         tdiHistoryList = list;
                     }
@@ -1065,71 +976,26 @@
                     renderHistory();
                 });
 
+            // 입력 이벤트 리스너
             document.querySelectorAll('#calcForm input').forEach(input => {
-                input.addEventListener('input', () => {
-                    calculate();
-                });
+                input.addEventListener('input', calculateTDI);
             });
 
             document.querySelectorAll('#areaCalcForm input').forEach(input => {
-                input.addEventListener('input', () => {
-                    calculateArea();
-                });
+                input.addEventListener('input', calculateArea);
             });
 
+            // 히스토리 클릭 이벤트
             const tbody = document.getElementById('historyTable').querySelector('tbody');
             tbody.addEventListener('click', function (e) {
                 let tr = e.target.closest('tr');
                 if (!tr) return;
+                
                 const idx = tr.getAttribute('data-idx');
                 const h = currentHistoryList[idx];
                 if (!h) return;
 
-                // 안전한 값 설정 (undefined 방지)
-                const setInputValue = (name, value) => {
-                    const input = document.querySelector(`input[name="${name}"]`);
-                    if (input && value !== undefined && value !== null) {
-                        input.value = value;
-                    }
-                };
-
-                if (currentHistoryList === tdiHistoryList) {
-                    // TDI 히스토리 클릭 시
-                    setInputValue('camera_res', h.camera_res);
-                    setInputValue('camera_freq', h.camera_freq);
-                    setInputValue('scan_speed', h.scan_speed);
-                    setInputValue('accel_g', h.accel_g);
-                    setInputValue('accel_margin', h.accel_margin);
-                    setInputValue('wafer_size', h.wafer_size);
-                    setInputValue('safety_factor', h.safety_factor);
-                    setInputValue('scan_delay', h.scan_delay);
-                    setInputValue('process_delay', h.process_delay);
-                    setInputValue('wafer_align_scan_count', h.wafer_align_scan_count);
-                    setInputValue('fov_pixel', h.fov_pixel);
-
-                    // 입력값 설정 후 계산 실행
-                    setTimeout(() => {
-                        calculate();
-                    }, 100);
-                } else {
-                    // AREA 히스토리 클릭 시
-                    setInputValue('area_camera_res', h.area_camera_res);
-                    setInputValue('area_camera_freq', h.area_camera_freq);
-                    setInputValue('area_scan_speed', h.area_scan_speed);
-                    setInputValue('area_accel_g', h.area_accel_g);
-                    setInputValue('area_accel_margin', h.area_accel_margin);
-                    setInputValue('area_wafer_size', h.area_wafer_size);
-                    setInputValue('area_fov_x', h.area_fov_x);
-                    setInputValue('area_fov_y', h.area_fov_y);
-                    setInputValue('area_scan_delay', h.area_scan_delay);
-                    setInputValue('area_process_delay', h.area_process_delay);
-                    setInputValue('area_wafer_change_delay', h.area_wafer_change_delay);
-
-                    // 입력값 설정 후 계산 실행
-                    setTimeout(() => {
-                        calculateArea();
-                    }, 100);
-                }
+                handleHistoryClick(h);
             });
         }
     </script>
