@@ -58,9 +58,17 @@
         }
 
         @keyframes valueChanged {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .main-flex {
@@ -74,6 +82,16 @@
             box-shadow: 0 4px 24px rgba(30, 60, 120, 0.10);
             padding: 24px 18px 18px 18px;
             align-items: flex-start;
+        }
+
+        .trigger-main-flex {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(30, 60, 120, 0.10);
+            padding: 24px 18px 18px 18px;
         }
 
         .left-panel {
@@ -137,7 +155,7 @@
         .form-row {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: flex-start;
             margin-bottom: 10px;
         }
 
@@ -150,17 +168,18 @@
         }
 
         label {
-            min-width: 90px;
+            width: 200px;
             color: #1e293b;
             font-size: 0.97rem;
             font-weight: 500;
             margin-bottom: 0;
+            text-align: left;
+            padding-right: 8px;
         }
 
         input[type="number"],
         input[type="text"] {
-            flex: 1;
-            width: 100%;
+            width: 120px;
             box-sizing: border-box;
             padding: 6px 8px;
             border: 1.2px solid #dbeafe;
@@ -219,9 +238,9 @@
         }
 
         .output-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 6px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .output-row {
@@ -289,6 +308,16 @@
             display: block;
         }
 
+        .line-scan-only,
+        .area-scan-only {
+            display: none;
+        }
+
+        .line-scan-only.show,
+        .area-scan-only.show {
+            display: flex;
+        }
+
         .history-section {
             max-width: 1300px;
             margin: 18px auto 0 auto;
@@ -328,6 +357,15 @@
             overflow-y: auto;
         }
 
+        .preset-section {
+            max-width: 1300px;
+            margin: 18px auto 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(30, 60, 120, 0.07);
+            padding: 12px 10px 18px 10px;
+        }
+        
         @media (max-width: 1300px) {
 
             .main-flex,
@@ -362,6 +400,7 @@
         <div class="tab-header">
             <button class="tab-button active" onclick="switchTab('tdi')">TDI</button>
             <button class="tab-button" onclick="switchTab('area')">AREA</button>
+            <button class="tab-button" onclick="switchTab('trigger')">TRIGGER</button>
         </div>
 
         <div id="tdi-tab" class="tab-content active">
@@ -378,7 +417,7 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="0.1"
                                             name="accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="text"
+                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
                                             name="scan_speed" value="100"></div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="accel_margin" value="0"></div>
@@ -475,7 +514,7 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="any"
                                             name="area_accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="text"
+                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
                                             name="area_scan_speed" value="100"></div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="area_accel_margin" value="0"></div>
@@ -560,6 +599,47 @@
                 </div>
             </div>
         </div>
+        <div id="trigger-tab" class="tab-content">
+            <div class="trigger-main-flex">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h2 style="margin-bottom: 0;">Trigger Uptime 계산기</h2>
+                </div>
+                <form id="triggerCalcForm" autocomplete="off">
+                    <div class="form-section">
+                        <div class="form-title">Setting</div>
+                        <div class="grid2">
+                            <div>
+                                <div class="form-row"><label>Type</label><select name="trigger_type"
+                                        onchange="handleTriggerTypeChange()"
+                                        style="width: 120px; height: 28px; padding: 6px 8px; border: 1.2px solid #dbeafe; border-radius: 7px; font-size: 0.97rem; background: #f8fafc;">
+                                        <option value="LineScan">LineScan</option>
+                                        <option value="AreaScan">AreaScan</option>
+                                    </select></div>
+                                <div class="form-row"><label>Pixel Size [um]</label><input type="number"
+                                        name="trigger_pixel_size" value="0.4"></div>
+                                <div class="form-row"><label>Height [pixel]</label><input type="number" step="any"
+                                        name="trigger_height" value="400"></div>
+                                <div class="form-row line-scan-only"><label>LineRate [kHz]</label><input type="number"
+                                        step="any" name="trigger_line_rate" value="900"></div>
+                                <div class="form-row area-scan-only"><label>FPS</label><input type="number" step="any"
+                                        name="trigger_fps" value="1000"></div>
+                            </div>
+                            <div>
+                                <div class="form-row"><label>Trigger Interval [mm]</label><input type="number"
+                                        step="any" name="trigger_interval" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Trigger Uptime [us]</label><input type="number" step="any"
+                                        name="trigger_uptime" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Half Trigger Uptime [us]</label><input type="number"
+                                        step="any" name="trigger_half_uptime" value="0" readonly disabled></div>
+                                <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number" step="any"
+                                        name="trigger_scan_speed" value="0" readonly disabled></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     </div>
 
     <div class="history-section">
@@ -584,10 +664,81 @@
             <tbody></tbody>
         </table>
     </div>
+
+    <div class="preset-section" style="display: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div class="history-title">Preset</div>
+        </div>
+        <table class="history-table" id="presetTable">
+            <thead>
+                <tr>
+                    <th>설비명</th>
+                    <th>Type</th>
+                    <th>Pixel Size</th>
+                    <th>Height</th>
+                    <th>LineRate</th>
+                    <th>FPS</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
     <script>
         let tdiHistoryList = [];
         let areaHistoryList = [];
         let currentHistoryList = tdiHistoryList;
+        
+        // Preset 데이터
+        let presetList = [
+            {
+                equipment: 'WIND2-F (TDI Color)',
+                type: 'LineScan',
+                pixelSize: 1.6,
+                height: 400,
+                lineRate: 120,
+                fps: null
+            },
+            {
+                equipment: 'WIND2-F (TDI Color)',
+                type: 'LineScan',
+                pixelSize: 3.2,
+                height: 400,
+                lineRate: 120,
+                fps: null
+            },
+            {
+                equipment: 'WIND2-B (TDI Mono)',
+                type: 'LineScan',
+                pixelSize: 0.4,
+                height: 400,
+                lineRate: 360,
+                fps: null
+            },
+            {
+                equipment: 'WIND2-B (TDI Mono)',
+                type: 'LineScan',
+                pixelSize: 0.8,
+                height: 400,
+                lineRate: 360,
+                fps: null
+            },
+            {
+                equipment: 'WIND3 (TDI Mono-1MHz Cam)',
+                type: 'LineScan',
+                pixelSize: 0.4,
+                height: 400,
+                lineRate: 900,
+                fps: null
+            },
+            {
+                equipment: 'WIND3 (TDI Color-1MHz Cam)',
+                type: 'LineScan',
+                pixelSize: 0.8,
+                height: 400,
+                lineRate: 900,
+                fps: null
+            }
+        ];
 
         // 공통 상수
         const UNIT = 1000;
@@ -625,8 +776,8 @@
 
         // DOM 요소 값 설정 헬퍼 함수
         function setElementValue(selector, value, isName = false) {
-            const element = isName ? 
-                document.getElementsByName(selector)[0] : 
+            const element = isName ?
+                document.getElementsByName(selector)[0] :
                 document.getElementById(selector);
             if (element && value !== undefined && value !== null) {
                 element.value = typeof value === 'number' ? value.toFixed(4) : value;
@@ -655,8 +806,35 @@
             document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`).classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
 
+            // Trigger 탭일 때 preset-section 표시, history-section 숨기기
+            if (tabName === 'trigger') {
+                const historySection = document.querySelector('.history-section');
+                const presetSection = document.querySelector('.preset-section');
+                if (historySection) {
+                    historySection.style.display = 'none';
+                }
+                if (presetSection) {
+                    presetSection.style.display = 'block';
+                }
+            } else {
+                // 다른 탭일 때 history-section 표시, preset-section 숨기기
+                const historySection = document.querySelector('.history-section');
+                const presetSection = document.querySelector('.preset-section');
+                if (historySection) {
+                    historySection.style.display = 'block';
+                }
+                if (presetSection) {
+                    presetSection.style.display = 'none';
+                }
+            }
+
             currentHistoryList = tabName === 'tdi' ? tdiHistoryList : areaHistoryList;
-            renderHistory();
+            
+            if (tabName === 'trigger') {
+                renderPreset();
+            } else {
+                renderHistory();
+            }
         }
 
 
@@ -670,9 +848,9 @@
             const fovPixel = parseFloat(data.fov_pixel) || 0;
             const safetyFactor = parseFloat(data.safety_factor) || 0;
             const scanSpeed = Math.min(parseFloat(data.scan_speed) || 0, cameraRes * cameraFreq * (safetyFactor / 100));
-            
+
             validateScanSpeed(document.getElementsByName('scan_speed')[0], scanSpeed);
-            
+
             const accelG = parseFloat(data.accel_g) || 0;
             const accelMargin = parseFloat(data.accel_margin) || 0;
             const waferSize = parseFloat(data.wafer_size) || 0;
@@ -729,7 +907,7 @@
             const lineCount = Math.ceil((waferSize * 1000) / (cameraRes * fovX));
             const scanCount = lineCount;
 
-            const lineScanTime = Math.ceil(totalScanDist - accelDist*2) / (scanSpeed * (safetyFactor / 100));
+            const lineScanTime = Math.ceil(totalScanDist - accelDist * 2) / (scanSpeed * (safetyFactor / 100));
             const fullScanTime = (accelTime * 2 + scanDelay) * scanCount + lineScanTime * scanCount + processDelay;
             const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
             const circleScanTime = fullScanTime * 0.95;
@@ -830,8 +1008,79 @@
         function renderHistory() {
             const tbody = document.getElementById('historyTable').querySelector('tbody');
             tbody.innerHTML = currentHistoryList.map((h, i) =>
-                `<tr data-idx="${i}"><td>${h.datetime}</td><td>${h.accel_g || h.area_accel_g}</td><td>${h.scan_speed || h.area_scan_speed}</td><td>${h.wafer_size || h.area_wafer_size}</td><td>${h.camera_res || h.area_camera_res}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
+                `<tr data-idx="${i}" onclick="loadHistoryItem(${i})" style="cursor: pointer;"><td>${h.datetime}</td><td>${h.accel_g || h.area_accel_g}</td><td>${h.scan_speed || h.area_scan_speed}</td><td>${h.wafer_size || h.area_wafer_size}</td><td>${h.camera_res || h.area_camera_res}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`
             ).join('');
+        }
+
+        // Preset 테이블 렌더링
+        function renderPreset() {
+            const tbody = document.getElementById('presetTable').querySelector('tbody');
+            tbody.innerHTML = presetList.map((item, i) =>
+                `<tr data-idx="${i}" onclick="loadPresetItem(${i})" style="cursor: pointer;"><td>${item.equipment}</td><td>${item.type}</td><td>${item.pixelSize}</td><td>${item.height}</td><td>${item.lineRate || '-'}</td><td>${item.fps || '-'}</td></tr>`
+            ).join('');
+        }
+
+        // 히스토리 아이템 로드
+        function loadHistoryItem(index) {
+            const history = currentHistoryList[index];
+            if (!history) return;
+
+            // 현재 활성 탭에 따라 폼에 값 설정
+            const activeTab = document.querySelector('.tab-button.active');
+            if (activeTab && activeTab.textContent === 'TDI') {
+                // TDI 폼에 값 설정
+                setElementValue('accel_g', history.accel_g, true);
+                setElementValue('scan_speed', history.scan_speed, true);
+                setElementValue('wafer_size', history.wafer_size, true);
+                setElementValue('camera_res', history.camera_res, true);
+                setElementValue('camera_freq', history.camera_freq, true);
+                setElementValue('fov_pixel', history.fov_pixel, true);
+                setElementValue('safety_factor', history.safety_factor, true);
+                setElementValue('accel_margin', history.accel_margin, true);
+                setElementValue('scan_delay', history.scan_delay, true);
+                setElementValue('process_delay', history.process_delay, true);
+                setElementValue('wafer_align_scan_count', history.wafer_align_scan_count, true);
+                
+                // TDI 계산 실행
+                calculateTDI();
+            } else if (activeTab && activeTab.textContent === 'AREA') {
+                // AREA 폼에 값 설정
+                setElementValue('area_accel_g', history.area_accel_g, true);
+                setElementValue('area_scan_speed', history.area_scan_speed, true);
+                setElementValue('area_wafer_size', history.area_wafer_size, true);
+                setElementValue('area_camera_res', history.area_camera_res, true);
+                setElementValue('area_camera_freq', history.area_camera_freq, true);
+                setElementValue('area_fov_x', history.area_fov_x, true);
+                setElementValue('area_fov_y', history.area_fov_y, true);
+                setElementValue('area_safety_factor', history.area_safety_factor, true);
+                setElementValue('area_accel_margin', history.area_accel_margin, true);
+                setElementValue('area_scan_delay', history.area_scan_delay, true);
+                setElementValue('area_process_delay', history.area_process_delay, true);
+                setElementValue('area_wafer_change_delay', history.area_wafer_change_delay, true);
+                
+                // AREA 계산 실행
+                calculateArea();
+            }
+        }
+
+        // Preset 아이템 로드
+        function loadPresetItem(index) {
+            const preset = presetList[index];
+            if (!preset) return;
+
+            // Trigger 폼에 값 설정
+            setElementValue('trigger_type', preset.type, true);
+            setElementValue('trigger_pixel_size', preset.pixelSize, true);
+            setElementValue('trigger_height', preset.height, true);
+            
+            if (preset.type === 'LineScan') {
+                setElementValue('trigger_line_rate', preset.lineRate, true);
+            } else if (preset.type === 'AreaScan') {
+                setElementValue('trigger_fps', preset.fps, true);
+            }
+
+            // Type 변경 처리 및 계산 실행
+            handleTriggerTypeChange();
         }
 
         function clearHistory() {
@@ -866,7 +1115,7 @@
                 }).then(canvas => {
                     const screenshot = canvas.toDataURL('image/png');
                     const imageRatio = canvas.height / canvas.width;
-                    
+
                     fetch(apiEndpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -910,6 +1159,68 @@
             const encodedEmail = encodeURIComponent(userEmail);
             const webTeamsUrl = `https://teams.microsoft.com/l/chat/0/0?users=${encodedEmail}`;
             window.open(webTeamsUrl, '_blank');
+        }
+
+        // Trigger Type 변경 시 필드 표시/숨김 처리
+        function handleTriggerTypeChange() {
+            const typeSelect = document.querySelector('select[name="trigger_type"]');
+            if (!typeSelect) return;
+
+            const selectedType = typeSelect.value;
+            const lineScanFields = document.querySelectorAll('.line-scan-only');
+            const areaScanFields = document.querySelectorAll('.area-scan-only');
+
+            // 모든 조건부 필드 숨기기
+            lineScanFields.forEach(field => field.classList.remove('show'));
+            areaScanFields.forEach(field => field.classList.remove('show'));
+
+            // 선택된 타입에 따라 필드 표시
+            if (selectedType === 'LineScan') {
+                lineScanFields.forEach(field => field.classList.add('show'));
+            } else if (selectedType === 'AreaScan') {
+                areaScanFields.forEach(field => field.classList.add('show'));
+            }
+
+            // Type 변경 시 계산 실행
+            calculateTrigger();
+        }
+
+        // Trigger 계산 함수
+        function calculateTrigger() {
+            const form = document.getElementById('triggerCalcForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            const type = data.trigger_type || 'LineScan';
+            const pixelSize = parseFloat(data.trigger_pixel_size) || 0;
+            const height = parseFloat(data.trigger_height) || 0;
+            const lineRate = parseFloat(data.trigger_line_rate) || 0;
+            const fps = parseFloat(data.trigger_fps) || 0;
+
+            let triggerInterval = 0;
+            let triggerUptime = 0;
+            let halfTriggerUptime = 0;
+            let scanSpeed = 0;
+
+            if (type === 'LineScan') {
+                // LineScan 계산
+                triggerInterval = pixelSize / 1000; // um to mm
+                scanSpeed =  (lineRate ?? 0)  * pixelSize; // mm/s
+                triggerUptime = (pixelSize / scanSpeed) * 1000; // kHz to us
+                halfTriggerUptime = triggerUptime / 2;
+            } else if (type === 'AreaScan') {
+                // AreaScan 계산
+                triggerInterval = pixelSize * height / 1000; // um to mm
+                scanSpeed =  (fps ?? 0)  * triggerInterval; // mm/s
+                triggerUptime = (pixelSize / scanSpeed) * 1000; // fps to us
+                halfTriggerUptime = triggerUptime / 2;
+            }
+
+            // 결과 업데이트
+            setElementValue('trigger_interval', triggerInterval, true);
+            setElementValue('trigger_uptime', triggerUptime, true);
+            setElementValue('trigger_half_uptime', halfTriggerUptime, true);
+            setElementValue('trigger_scan_speed', scanSpeed, true);
         }
 
         // 히스토리 클릭 이벤트 처리
@@ -985,12 +1296,23 @@
                 input.addEventListener('input', calculateArea);
             });
 
+            // Trigger 폼 이벤트 리스너
+            document.querySelectorAll('#triggerCalcForm input').forEach(input => {
+                input.addEventListener('input', calculateTrigger);
+            });
+
+            // Trigger Type 초기화 및 계산
+            handleTriggerTypeChange();
+            
+            // Preset 테이블 초기 렌더링
+            renderPreset();
+
             // 히스토리 클릭 이벤트
             const tbody = document.getElementById('historyTable').querySelector('tbody');
             tbody.addEventListener('click', function (e) {
                 let tr = e.target.closest('tr');
                 if (!tr) return;
-                
+
                 const idx = tr.getAttribute('data-idx');
                 const h = currentHistoryList[idx];
                 if (!h) return;
