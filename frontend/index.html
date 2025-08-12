@@ -167,6 +167,20 @@
             padding-left: 18px;
         }
 
+        .grid3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 14px;
+        }
+
+        .grid3>div:first-child {
+            padding-right: 0px;
+        }
+
+        .grid3>div:last-child {
+            padding-left: 0px;
+        }
+
         label {
             width: 200px;
             color: #1e293b;
@@ -417,8 +431,13 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="0.1"
                                             name="accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
-                                            name="scan_speed" value="100"></div>
+                                    <div class="form-row">
+                                        <label>Scan Speed [mm/s]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" name="scan_speed" value="100" style="width: 70px;">
+                                            <span style="color: #ff0000; font-size: 0.7em;">&le;<span id="max_scan_speed"></span>
+                                        </div>
+                                    </div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="accel_margin" value="0"></div>
                                     <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any"
@@ -514,8 +533,13 @@
                                 <div>
                                     <div class="form-row"><label>가속도 [G]</label><input type="number" step="any"
                                             name="area_accel_g" value="0.3"></div>
-                                    <div class="form-row"><label>Scan Speed [mm/s]</label><input type="number"
-                                            name="area_scan_speed" value="100"></div>
+                                    <div class="form-row">
+                                        <label>Scan Speed [mm/s]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" name="area_scan_speed" value="10" style="width: 70px;">
+                                            <span style="color: #ff0000; font-size: 0.7em;">&le;<span id="area_max_scan_speed"></span>
+                                        </div>
+                                    </div>
                                     <div class="form-row"><label>가감속 여유 거리 [mm]</label><input type="number" step="any"
                                             name="area_accel_margin" value="0"></div>
                                     <div class="form-row"><label>Wafer Size [mm]</label><input type="number" step="any"
@@ -743,6 +767,18 @@
         // 공통 상수
         const UNIT = 1000;
         const GRAVITY = 9.80665;
+        
+        // 설정 가능한 변수들
+        let max_scan_speed = 0; // 최대 스캔 속도 [mm/s]
+        
+        // 최대 스캔 속도 설정 함수
+        function setMaxScanSpeed(id, newSpeed) {
+            max_scan_speed = newSpeed;
+            const maxScanSpeedDisplay = document.getElementById(id);
+            if (maxScanSpeedDisplay) {
+                maxScanSpeedDisplay.textContent = max_scan_speed.toFixed(2);
+            }
+        }
 
         // 공통 계산 함수들
         function getAccelTime(acceleration, speed) {
@@ -848,7 +884,7 @@
             const fovPixel = parseFloat(data.fov_pixel) || 0;
             const safetyFactor = parseFloat(data.safety_factor) || 0;
             const scanSpeed = Math.min(parseFloat(data.scan_speed) || 0, cameraRes * cameraFreq * (safetyFactor / 100));
-
+            setMaxScanSpeed('max_scan_speed', cameraRes * cameraFreq * (safetyFactor / 100));
             validateScanSpeed(document.getElementsByName('scan_speed')[0], scanSpeed);
 
             const accelG = parseFloat(data.accel_g) || 0;
@@ -897,6 +933,7 @@
             const processDelay = parseFloat(data.area_process_delay) || 0;
             const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
             const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraFreq / 1000) * (safetyFactor / 100));
+            setMaxScanSpeed('area_max_scan_speed', (fovY * cameraFreq / 1000) * (safetyFactor / 100));
             validateScanSpeed(document.getElementsByName('area_scan_speed')[0], scanSpeed);
 
             const accelTime = getAccelTime(accelG, scanSpeed);
@@ -1306,6 +1343,8 @@
             
             // Preset 테이블 초기 렌더링
             renderPreset();
+            calculateTDI();
+            calculateArea();
 
             // 히스토리 클릭 이벤트
             const tbody = document.getElementById('historyTable').querySelector('tbody');
