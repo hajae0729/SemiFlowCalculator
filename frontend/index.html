@@ -588,7 +588,7 @@
                                             step="any" name="area_process_delay" value="5"></div>
                                 </div>
                                 <div>
-                                    <div class="form-row"><label>Wafer Change Delay [sec]</label><input type="number"
+                                    <div class="form-row"><label>Wafer Align Delay [sec]</label><input type="number"
                                             step="any" name="area_wafer_change_delay" value="2"></div>
                                 </div>
                             </div>
@@ -900,9 +900,9 @@
             const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
 
             const scanCount = Math.ceil(waferSize / (fovPixel * cameraRes / 1000)) + waferAlignScanCount;
-            const fullScanTime = ((totalScanDist * scanCount) / scanSpeed + scanCount * 0.05) + processDelay;
-            const fullScanUph = 3600 / (fullScanTime + scanDelay);
-            const circleScanTime = fullScanTime * 0.95;
+            const fullScanTime = (((accelTime * 2) +  (constDist / scanSpeed)) + scanDelay) * scanCount;
+            const fullScanUph = 3600 / (fullScanTime + processDelay);
+            const circleScanTime = fullScanTime * 0.9;
             const circleScanUph = 3600 / (circleScanTime + scanDelay);
 
             // 결과 업데이트
@@ -932,8 +932,8 @@
             const scanDelay = parseFloat(data.area_scan_delay) || 0;
             const processDelay = parseFloat(data.area_process_delay) || 0;
             const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
-            const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraFreq / 1000) * (safetyFactor / 100));
-            setMaxScanSpeed('area_max_scan_speed', (fovY * cameraFreq / 1000) * (safetyFactor / 100));
+            const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraRes / 1000) * cameraFreq  * (safetyFactor / 100));
+            setMaxScanSpeed('area_max_scan_speed', (fovY * cameraRes / 1000) * cameraFreq * (safetyFactor / 100));
             validateScanSpeed(document.getElementsByName('area_scan_speed')[0], scanSpeed);
 
             const accelTime = getAccelTime(accelG, scanSpeed);
@@ -944,11 +944,11 @@
             const lineCount = Math.ceil((waferSize * 1000) / (cameraRes * fovX));
             const scanCount = lineCount;
 
-            const lineScanTime = Math.ceil(totalScanDist - accelDist * 2) / (scanSpeed * (safetyFactor / 100));
-            const fullScanTime = (accelTime * 2 + scanDelay) * scanCount + lineScanTime * scanCount + processDelay;
-            const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
-            const circleScanTime = fullScanTime * 0.95;
-            const circleScanUph = 3600 / (circleScanTime + waferChangeDelay);
+            const lineScanTime = (accelTime * 2) + (constDist / scanSpeed);
+            const fullScanTime = (lineScanTime + scanDelay) * scanCount + waferChangeDelay;
+            const fullScanUph = 3600 / (fullScanTime + processDelay);
+            const circleScanTime = fullScanTime * 0.9;
+            const circleScanUph = 3600 / (circleScanTime + processDelay);
 
             // 결과 업데이트
             setElementValue('area_accel_dist', accelDist, true);
