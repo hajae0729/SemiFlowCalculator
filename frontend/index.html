@@ -486,6 +486,8 @@
                                 <div>
                                     <div class="form-row"><label>Wafer Align Scan Count</label><input type="number"
                                             step="any" name="wafer_align_scan_count" value="1"></div>
+                                    <div class="form-row"><label>Wafer Change delay [sec]</label><input type="number"
+                                            step="any" name="waferChange_delay" value="15"></div>
                                 </div>
                             </div>
                         </div>
@@ -589,7 +591,9 @@
                                 </div>
                                 <div>
                                     <div class="form-row"><label>Wafer Align Delay [sec]</label><input type="number"
-                                            step="any" name="area_wafer_change_delay" value="2"></div>
+                                            step="any" name="area_waferAlign_delay" value="2"></div>
+                                    <div class="form-row"><label>Wafer Change delay[sec]</label><input type="number"
+                                            step="any" name="area_waferChange_delay" value="5"></div>
                                 </div>
                             </div>
                         </div>
@@ -893,6 +897,7 @@
             const scanDelay = parseFloat(data.scan_delay) || 0;
             const processDelay = parseFloat(data.process_delay) || 0;
             const waferAlignScanCount = parseFloat(data.wafer_align_scan_count) || 0;
+            const waferChangeDelay = parseFloat(data.waferChange_delay) || 0;
 
             const accelTime = getAccelTime(accelG, scanSpeed);
             const accelDist = getAccelDistance(accelG, scanSpeed);
@@ -900,8 +905,8 @@
             const totalScanDist = getTotalScanDistance(accelDist, waferSize, accelMargin);
 
             const scanCount = Math.ceil(waferSize / (fovPixel * cameraRes / 1000)) + waferAlignScanCount;
-            const fullScanTime = (((accelTime * 2) +  (constDist / scanSpeed)) + scanDelay) * scanCount;
-            const fullScanUph = 3600 / (fullScanTime + processDelay);
+            const fullScanTime = (((accelTime * 2) +  ((constDist + accelMargin*2)  / scanSpeed)) + scanDelay) * scanCount + processDelay;
+            const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
             const circleScanTime = fullScanTime * 0.9;
             const circleScanUph = 3600 / (circleScanTime + scanDelay);
 
@@ -931,7 +936,9 @@
             const fovY = parseFloat(data.area_fov_y) || 0;
             const scanDelay = parseFloat(data.area_scan_delay) || 0;
             const processDelay = parseFloat(data.area_process_delay) || 0;
-            const waferChangeDelay = parseFloat(data.area_wafer_change_delay) || 0;
+            const waferAlignDelay = parseFloat(data.area_waferAlign_delay) || 0;
+            const waferChangeDelay = parseFloat(data.area_waferChange_delay) || 0;
+
             const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraRes / 1000) * cameraFreq  * (safetyFactor / 100));
             setMaxScanSpeed('area_max_scan_speed', (fovY * cameraRes / 1000) * cameraFreq * (safetyFactor / 100));
             validateScanSpeed(document.getElementsByName('area_scan_speed')[0], scanSpeed);
@@ -944,11 +951,11 @@
             const lineCount = Math.ceil((waferSize * 1000) / (cameraRes * fovX));
             const scanCount = lineCount;
 
-            const lineScanTime = (accelTime * 2) + (constDist / scanSpeed);
-            const fullScanTime = (lineScanTime + scanDelay) * scanCount + waferChangeDelay;
-            const fullScanUph = 3600 / (fullScanTime + processDelay);
+            const lineScanTime = (accelTime * 2) + ((constDist + accelMargin*2)  / scanSpeed);
+            const fullScanTime = (lineScanTime + scanDelay) * scanCount + waferAlignDelay + processDelay;
+            const fullScanUph = 3600 / (fullScanTime + waferChangeDelay);
             const circleScanTime = fullScanTime * 0.9;
-            const circleScanUph = 3600 / (circleScanTime + processDelay);
+            const circleScanUph = 3600 / (circleScanTime + waferChangeDelay);
 
             // 결과 업데이트
             setElementValue('area_accel_dist', accelDist, true);
@@ -984,6 +991,7 @@
                 scan_delay: data.scan_delay,
                 process_delay: data.process_delay,
                 wafer_align_scan_count: data.wafer_align_scan_count,
+                waferChange_delay: data.waferChange_delay,
                 scan_time: scan_time,
                 uph: uph,
             };
@@ -1023,7 +1031,8 @@
                 area_fov_y: data.area_fov_y,
                 area_scan_delay: data.area_scan_delay,
                 area_process_delay: data.area_process_delay,
-                area_wafer_change_delay: data.area_wafer_change_delay,
+                area_waferAlign_delay: data.area_waferAlign_delay,
+                area_waferChange_delay: data.area_waferChange_delay,
                 scan_time: scan_time,
                 uph: uph
             };
@@ -1077,6 +1086,7 @@
                 setElementValue('scan_delay', history.scan_delay, true);
                 setElementValue('process_delay', history.process_delay, true);
                 setElementValue('wafer_align_scan_count', history.wafer_align_scan_count, true);
+                setElementValue('waferChange_delay', history.waferChange_delay, true);
                 
                 // TDI 계산 실행
                 calculateTDI();
@@ -1093,7 +1103,8 @@
                 setElementValue('area_accel_margin', history.area_accel_margin, true);
                 setElementValue('area_scan_delay', history.area_scan_delay, true);
                 setElementValue('area_process_delay', history.area_process_delay, true);
-                setElementValue('area_wafer_change_delay', history.area_wafer_change_delay, true);
+                setElementValue('area_waferAlign_delay', history.area_waferAlign_delay, true);
+                setElementValue('area_waferChange_delay', history.area_waferChange_delay, true);
                 
                 // AREA 계산 실행
                 calculateArea();
@@ -1280,6 +1291,7 @@
                 setInputValue('scan_delay', h.scan_delay);
                 setInputValue('process_delay', h.process_delay);
                 setInputValue('wafer_align_scan_count', h.wafer_align_scan_count);
+                setInputValue('waferChange_delay', h.waferChange_delay);
                 setInputValue('fov_pixel', h.fov_pixel);
 
                 setTimeout(() => calculateTDI(), 100);
@@ -1294,7 +1306,8 @@
                 setInputValue('area_fov_y', h.area_fov_y);
                 setInputValue('area_scan_delay', h.area_scan_delay);
                 setInputValue('area_process_delay', h.area_process_delay);
-                setInputValue('area_wafer_change_delay', h.area_wafer_change_delay);
+                setInputValue('area_waferAlign_delay', h.area_waferAlign_delay);
+                setInputValue('area_waferChange_delay', h.area_waferChange_delay);
 
                 setTimeout(() => calculateArea(), 100);
             }
