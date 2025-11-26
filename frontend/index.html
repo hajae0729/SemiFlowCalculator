@@ -200,6 +200,7 @@
             border-radius: 7px;
             font-size: 0.97rem;
             background: #f8fafc;
+			text-align: center;
             transition: border 0.2s;
             margin-bottom: 0;
             height: 28px;
@@ -379,6 +380,59 @@
             box-shadow: 0 2px 10px rgba(30, 60, 120, 0.07);
             padding: 12px 10px 18px 10px;
         }
+		
+		/* MCC 전용 레이아웃 */
+		.mcc-flex {
+			display: flex;
+			gap: 16px;
+			align-items: stretch;
+		}
+		.mcc-left {
+			flex: 0 0 35%;
+			max-width: 35%;
+		}
+		.mcc-right {
+			flex: 0 0 65%;
+			max-width: 65%;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			min-height: 520px;
+		}
+		.mcc-right .flow-diagram {
+			width: 100%;
+			height: 100%;
+			background: #f8fafc;
+			border: 1px solid #e5e7eb;
+			border-radius: 8px;
+			display: flex;
+			align-items: flex-start;   /* SVG를 상단에 고정 */
+			justify-content: flex-start;
+			overflow: hidden;
+		}
+		.mcc-right-top {
+			/* 결과 테이블 영역: 고정 높이 */
+			flex: 0 0 150px;
+			min-height: 150px;
+			max-height: 150px;
+			padding-bottom: 8px;
+		}
+		.mcc-right-bottom {
+			/* 흐름도 영역: 나머지 공간 채우기 (비율이 아니라 고정 상단 + 가변 하단 구조) */
+			flex: 1 1 auto;
+			min-height: 0;
+			display: flex;
+		}
+		.mcc-right-top .result-table {
+			height: 100%;
+			background: #fff;
+			border: 1px solid #e5e7eb;
+			border-radius: 8px;
+			overflow: auto;
+			padding: 8px;
+		}
+		/* 동작열 괄호 텍스트 축소 */
+		.op-sub { font-size: calc(1em - 4px); }
         
         @media (max-width: 1300px) {
 
@@ -412,12 +466,82 @@
     </div>
     <div class="tab-container">
         <div class="tab-header">
-            <button class="tab-button active" onclick="switchTab('tdi')">TDI</button>
+			<button class="tab-button active" onclick="switchTab('mcc')">MCC</button>
+			<button class="tab-button" onclick="switchTab('tdi')">TDI</button>
             <button class="tab-button" onclick="switchTab('area')">AREA</button>
             <button class="tab-button" onclick="switchTab('trigger')">TRIGGER</button>
         </div>
 
-        <div id="tdi-tab" class="tab-content active">
+		<div id="mcc-tab" class="tab-content active">
+			<div class="mcc-flex">
+				<div class="mcc-left">
+					<h2 style="margin-bottom: 10px;">MCC 계산기</h2>
+					<form id="mccForm" autocomplete="off">
+						<div class="form-section">
+							<div class="form-title">설정</div>
+							<div class="grid2">
+								<div>
+									<div class="form-row">
+										<label>Module 개수</label>
+										<input type="number" name="mcc_module_count" min="1" step="1" value="1" style="width: 70px;">
+									</div>
+								</div>
+								<div></div>
+							</div>
+						</div>
+					</form>
+					<table class="history-table">
+						<thead>
+							<tr>
+								<th>Part 구분</th>
+								<th>동작</th>
+								<th>동작시간 [sec]</th>
+							</tr>
+						</thead>
+						<tbody id="mccTableBody">
+						</tbody>
+					</table>
+				</div>
+				<div class="mcc-right">
+					<div class="mcc-right-top">
+						<div class="result-table">
+							<table class="history-table" id="mccResultTable">
+								<thead>
+									<tr>
+										<th>지표</th>
+										<th>값</th>
+										<th>단위</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>First Cycle</td>
+										<td id="mcc_first_cycle">-</td>
+										<td>sec</td>
+									</tr>
+									<tr>
+										<td>Repeat Cycle</td>
+										<td id="mcc_repeat_cycle">-</td>
+										<td>sec</td>
+									</tr>
+									<tr>
+										<td>WPH</td>
+										<td id="mcc_wph">-</td>
+										<td>매</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="mcc-right-bottom">
+						<div class="flow-diagram">
+							<svg id="mccFlowSvg" style="width: 100%; height: 100%;"></svg>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="tdi-tab" class="tab-content">
             <div class="main-flex">
                 <div class="left-panel">
                     <div
@@ -835,6 +959,513 @@
             }
         }
 
+		// number 입력 제약 헬퍼
+		function guardNumberInput(input) {
+			if (!input || input.dataset.guarded === '1') return;
+			input.setAttribute('inputmode', 'decimal');
+			input.addEventListener('keydown', (e) => {
+				const allowedKeys = ['Backspace','Tab','ArrowLeft','ArrowRight','Delete','Home','End','Enter','Escape'];
+				if (allowedKeys.includes(e.key)) return;
+				if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z','y'].includes(e.key.toLowerCase())) return;
+				if (e.key === '.' && !input.value.includes('.')) return;
+				if (e.key >= '0' && e.key <= '9') return;
+				e.preventDefault();
+			});
+			input.addEventListener('paste', (e) => {
+				const pasted = (e.clipboardData || window.clipboardData).getData('text');
+				if (!/^\d*\.?\d*$/.test(pasted)) {
+					e.preventDefault();
+				}
+			});
+			input.addEventListener('blur', () => {
+				let v = (input.value || '').trim();
+				if (v === '') return;
+				let s = v.replace(/[^\d.]/g, '');
+				const parts = s.split('.');
+				if (parts.length > 2) {
+					s = parts[0] + '.' + parts.slice(1).join('');
+				}
+				const n = s === '' ? NaN : parseFloat(s);
+				if (Number.isNaN(n)) {
+					input.value = '';
+				} else {
+					input.value = n < 0 ? 0 : n;
+				}
+			});
+			input.dataset.guarded = '1';
+		}
+		function applyNumberGuards(root) {
+			(root || document).querySelectorAll('input[type="number"]').forEach(guardNumberInput);
+		}
+
+		// Vision 이름 변경 시 2열 라벨 업데이트
+		const labelSuffixByKey = {
+			'align-ready': ' Align Ready',
+			'align': ' Align',
+			'inspection': ' Inspection',
+			'unloading-ready': ' Unloading Ready'
+		};
+		function updateVisionLabels(idx, name) {
+			const safeName = (name || `Vision${idx}`).trim() || `Vision${idx}`;
+			document.querySelectorAll(`.vision-label[data-vision-idx="${idx}"]`).forEach(span => {
+				const key = span.getAttribute('data-label-key');
+				const suffix = labelSuffixByKey[key] || '';
+				span.textContent = `${safeName}${suffix}`;
+			});
+		}
+		function setupVisionNameListeners() {
+			document.querySelectorAll('input[name^="mcc_vision"][name$="_name"]').forEach(input => {
+				const match = input.name.match(/^mcc_vision(\d+)_name$/);
+				if (!match) return;
+				const idx = parseInt(match[1], 10);
+				// 초기 라벨 동기화
+				updateVisionLabels(idx, input.value);
+				// 변화 시 라벨 갱신 + 플로우 다이어그램 갱신
+				const handler = () => {
+					updateVisionLabels(idx, input.value);
+					// MCC 플로우도 visionName 변경에 맞춰 즉시 갱신
+					if (typeof updateMccFlowFromForm === 'function') {
+						updateMccFlowFromForm();
+					}
+				};
+				input.addEventListener('input', handler);
+				input.addEventListener('blur', handler);
+			});
+		}
+
+		// MCC 플로우 노드 생성 및 렌더링
+		// Node 구조: { id, x, y, label, waferNum, timeKey }
+		function buildMccNodesFromForm() {
+			const nodes = [];
+			let id = 0;
+
+			// ARM 구분 없이 공통 플로우 사용
+			// Module 개수에 따라 검사부(vision 모듈) 동작을 반복해서 구성
+
+			// 모듈 개수
+			const moduleCountInput = document.querySelector('input[name="mcc_module_count"]');
+			let moduleCount = moduleCountInput ? parseInt(moduleCountInput.value || '1', 10) : 1;
+			if (!Number.isFinite(moduleCount) || moduleCount < 1) moduleCount = 1;
+
+			// 공통 선행 물류부 동작 (Cassette ~ 첫 Vision 진입 전까지)
+			const preLogistics = [
+				{ label: 'CST Load', timeKey: 'mcc_time_cst_load' },
+				{ label: 'Wafer Get (CST -> WTR)', timeKey: 'mcc_time_efem_get_cst_wtr' },
+				{ label: 'Wafer Put (WTR -> Aligner)', timeKey: 'mcc_time_efem_put_wtr_aligner' },
+				{ label: 'Align & BCR', timeKey: 'mcc_time_efem_align_bcr' },
+				{ label: 'Wafer Get (Aligner -> WTR)', timeKey: 'mcc_time_efem_get_aligner_wtr' },
+				{ label: 'Wafer Change', timeKey: 'mcc_time_efem_wafer_change' }
+			];
+
+			preLogistics.forEach(item => {
+				nodes.push({
+					id: id++,
+					label: item.label,
+					waferNum: '-',
+					timeKey: item.timeKey,
+					x: 0,
+					y: 0
+				});
+			});
+
+			// 모듈별 Flow
+			for (let m = 1; m <= moduleCount; m++) {
+				const visionNameInput = document.querySelector(`input[name="mcc_vision${m}_name"]`);
+				const visionName = (visionNameInput && visionNameInput.value && visionNameInput.value.trim()) || `Vision${m}`;
+
+				// 물류부: WTR -> Vision (m번째 모듈)
+				nodes.push({
+					id: id++,
+					label: 'Wafer Put (WTR -> Vision)',
+					waferNum: '-',
+					timeKey: 'mcc_time_efem_put_wtr_vision',
+					x: 0,
+					y: 0
+				});
+
+				// 검사부: visionName 기준 동작 4단계 + 모듈 내 Wafer Change
+				nodes.push({
+					id: id++,
+					label: `${visionName} Align Ready`,
+					waferNum: m,
+					timeKey: `mcc_time_vision${m}_align_ready`,
+					x: 0,
+					y: 0
+				});
+				nodes.push({
+					id: id++,
+					label: `${visionName} Align`,
+					waferNum: m,
+					timeKey: `mcc_time_vision${m}_align`,
+					x: 0,
+					y: 0
+				});
+				nodes.push({
+					id: id++,
+					label: `${visionName} Inspection`,
+					waferNum: m,
+					timeKey: `mcc_time_vision${m}_inspection`,
+					x: 0,
+					y: 0
+				});
+				nodes.push({
+					id: id++,
+					label: `${visionName} Unloading Ready`,
+					waferNum: m,
+					timeKey: `mcc_time_vision${m}_unloading_ready`,
+					x: 0,
+					y: 0
+				});
+
+				// 물류부: Vision -> WTR (m번째 모듈 검사 완료 후)
+				nodes.push({
+					id: id++,
+					label: 'Wafer Get (Vision -> WTR)',
+					waferNum: '-',
+					timeKey: 'mcc_time_efem_get_vision_wtr',
+					x: 0,
+					y: 0
+				});
+
+                nodes.push({
+					id: id++,
+					label: 'Wafer Change',
+					waferNum: '-',
+					timeKey: 'mcc_time_efem_wafer_change',
+					x: 0,
+					y: 0
+				});
+			}
+
+			// 마지막 Cassette 복귀 동작
+			nodes.push({
+				id: id++,
+				label: 'Wafer Put (WTR -> CST)',
+				waferNum: '-',
+				timeKey: 'mcc_time_efem_put_wtr_cst',
+				x: 0,
+				y: 0
+			});
+			nodes.push({
+				id: id++,
+				label: 'CST Unload',
+				waferNum: '-',
+				timeKey: 'mcc_time_cst_unload',
+				x: 0,
+				y: 0
+			});
+
+			// 위치 계산 (여러 줄로 배치하여 겹치지 않도록)
+			const startX = 80;
+			const endX = 720;
+			const availableWidth = endX - startX;
+			const nodeWidthForLayout = 100; // renderMccFlow의 nodeWidth와 맞춤
+			const minGap = 10;
+			const count = nodes.length;
+
+			// 한 줄에 배치할 최대 노드 수
+			let maxPerRow = Math.floor(availableWidth / (nodeWidthForLayout + minGap));
+			if (!Number.isFinite(maxPerRow) || maxPerRow < 1) maxPerRow = 1;
+
+			const baseY = 80;
+			const rowGap = 80;
+			const totalRows = Math.ceil(count / maxPerRow);
+
+			for (let i = 0; i < count; i++) {
+				const row = Math.floor(i / maxPerRow);
+				const colInRow = i % maxPerRow;
+
+				// 해당 줄에 실제로 배치될 노드 개수
+				const isLastRow = (row === totalRows - 1);
+				const rowCount = isLastRow ? (count - row * maxPerRow) : maxPerRow;
+
+				const rowStartX = startX;
+				const rowEndX = endX;
+				const stepX = rowCount > 1 ? (rowEndX - rowStartX) / (rowCount - 1) : 0;
+
+				const x = rowStartX + stepX * colInRow;
+				const y = baseY + rowGap * row;
+
+				nodes[i].x = x;
+				nodes[i].y = y;
+			}
+
+			return nodes;
+		}
+
+		function renderMccFlow(nodes) {
+			const svg = document.getElementById('mccFlowSvg');
+			if (!svg) return;
+
+			if (!nodes || nodes.length === 0) {
+				svg.innerHTML = '';
+				return;
+			}
+
+			const nodeWidth = 100;
+			const nodeHeight = 30;
+
+			let html = '';
+
+			// 화살표 정의 (조금 더 작은 사이즈)
+			html += [
+				'<defs>',
+				'  <marker id="mccArrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">',
+				'    <path d="M0,0 L0,6 L6,3 z" fill="#64748b"></path>',
+				'  </marker>',
+				'</defs>'
+			].join('');
+
+			// 노드(rect + label - 괄호 내용은 2행으로 분리)
+			nodes.forEach(node => {
+				const x = node.x - nodeWidth / 2;
+				const y = node.y - nodeHeight / 2;
+
+				const label = node.label || '';
+				let mainLabel = label;
+				let subLabel = '';
+
+				const parenIdx = label.indexOf('(');
+				if (parenIdx > 0) {
+					mainLabel = label.slice(0, parenIdx).trim();
+					subLabel = label.slice(parenIdx).trim(); // "(CST -> WTR)" 형태 그대로
+				}
+
+				const mainY = subLabel ? (node.y - 6) : node.y;
+				const subY = node.y + 8;
+
+				html += [
+					`<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="6" ry="6" fill="#e0e7ff" stroke="#93c5fd"></rect>`,
+					`<text x="${node.x}" y="${mainY}" text-anchor="middle" dominant-baseline="middle" fill="#1e293b" font-size="13">${mainLabel}</text>`,
+					subLabel
+						? `<text x="${node.x}" y="${subY}" text-anchor="middle" dominant-baseline="middle" fill="#4b5563" font-size="11">${subLabel}</text>`
+						: ''
+				].join('');
+			});
+
+			// id 순서대로 Line 연결
+			for (let i = 0; i < nodes.length - 1; i++) {
+				const from = nodes[i];
+				const to = nodes[i + 1];
+
+				// 노드 중심 기준 좌우/상하 좌표
+				const fromCenterX = from.x;
+				const fromCenterY = from.y;
+				const toCenterX = to.x;
+				const toCenterY = to.y;
+
+				// 같은 줄이면 Rect 오른쪽 중앙 → 다음 Rect 왼쪽 중앙으로 직선 연결
+				if (Math.abs(fromCenterY - toCenterY) < 0.5) {
+					const x1 = fromCenterX + nodeWidth / 2;
+					const y1 = fromCenterY;
+					const x2 = toCenterX - nodeWidth / 2;
+					const y2 = toCenterY;
+
+					html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#64748b" stroke-width="2" marker-end="url(#mccArrow)"></line>`;
+				} else {
+					// 다른 줄로 넘어갈 때:
+					// 한 줄의 마지막 Node는 Rect의 아래쪽 중앙에서 시작,
+					// 다음 줄 첫 Node는 Rect의 위쪽 중앙으로 끝나도록 꺾어서 연결
+					const startX = fromCenterX;
+					const startY = fromCenterY + nodeHeight / 2;   // 아래쪽 중앙
+					const endX = toCenterX;
+					const endY = toCenterY - nodeHeight / 2;       // 위쪽 중앙
+
+					// 두 Rect 사이의 세로 갭 중앙 높이
+					const midY = (startY + endY) / 2;
+
+					html += `<path d="M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#mccArrow)"></path>`;
+				}
+			}
+
+			svg.innerHTML = html;
+		}
+
+		function updateMccFlowFromForm() {
+			const nodes = buildMccNodesFromForm();
+			renderMccFlow(nodes);
+		}
+
+		// MCC 첫 사이클 / 반복 사이클 / WPH 계산 (Node Flow 기준으로 합산)
+		function calculateMccCycles() {
+			const nodes = buildMccNodesFromForm();
+
+			const getTimeFromForm = (timeKey) => {
+				if (!timeKey) return 0;
+				// mcc 시간 입력들은 폼 밖의 테이블(#mccTableBody) 안에 있으므로 document 기준으로 찾는다
+				const input = document.querySelector(`#mccTableBody input[name="${timeKey}"]`);
+				if (!input) return 0;
+				const v = parseFloat(input.value);
+				return Number.isFinite(v) ? v : 0;
+			};
+
+			// 1) 첫 사이클: 전체 Flow(Node) 시간 합
+			let firstCycle = 0;
+			nodes.forEach(node => {
+				firstCycle += getTimeFromForm(node.timeKey);
+			});
+
+			// 2) 반복 사이클:
+			// 마지막 검사부에서 소요되는 시간 =
+			//   마지막 모듈 구간의 [Wafer Put (WTR -> Vision) ~ Wafer Get (Vision -> WTR)] 구간 합
+			let repeatCycle = 0;
+			let lastPutIndex = -1;
+			for (let i = 0; i < nodes.length; i++) {
+				if (nodes[i].label === 'Wafer Put (WTR -> Vision)') {
+					lastPutIndex = i;
+				}
+			}
+			if (lastPutIndex >= 0) {
+				let lastGetIndex = -1;
+				for (let i = lastPutIndex; i < nodes.length; i++) {
+					if (nodes[i].label === 'Wafer Get (Vision -> WTR)') {
+						lastGetIndex = i;
+						break;
+					}
+				}
+				if (lastGetIndex >= lastPutIndex) {
+					for (let i = lastPutIndex; i <= lastGetIndex; i++) {
+						repeatCycle += getTimeFromForm(nodes[i].timeKey);
+					}
+				}
+			}
+
+			// 3) WPH: 1시간(3600sec) 동안 완료되는 Wafer 수
+			//  - 첫 사이클은 1장의 Wafer를 처리하는 데 firstCycle 시간이 걸림
+			//  - 이후부터는 반복 사이클마다 한 장씩 처리 → repeatCycle 당 1매
+			//  - 1시간 안에 완료되는 wafer 수:
+			//      if 3600 < firstCycle → 0 매
+			//      else N = 1 + (3600 - firstCycle) / repeatCycle
+			let wph = 0;
+			if (firstCycle > 0 && repeatCycle > 0 && firstCycle <= 3600) {
+				const remainingTime = 3600 - firstCycle;
+				const additional = remainingTime > 0 ? remainingTime / repeatCycle : 0;
+				const wafersPerHour = 1 + additional; // 첫 장 + 반복
+				// Throughput은 정수 매수 기준으로 floor 처리
+				wph = wafersPerHour;
+			}
+
+			// 결과 반영
+			const firstCell = document.getElementById('mcc_first_cycle');
+			if (firstCell) {
+				firstCell.textContent = firstCycle.toFixed(1);
+			}
+			const repeatCell = document.getElementById('mcc_repeat_cycle');
+			if (repeatCell) {
+				repeatCell.textContent = repeatCycle > 0 ? repeatCycle.toFixed(1) : '-';
+			}
+			const wphCell = document.getElementById('mcc_wph');
+			if (wphCell) {
+				wphCell.textContent = wph > 0 ? wph.toFixed(1) : '-';
+			}
+		}
+		
+		// MCC 표 렌더링 (Module 개수에 따라 Vision Part 반복)
+		function renderMccTable() {
+			const tbody = document.getElementById('mccTableBody');
+			if (!tbody) return;
+			// 기존 값 보존
+			const prevValues = {};
+			tbody.querySelectorAll('input').forEach(input => {
+				if (input.name) prevValues[input.name] = input.value;
+			});
+			const moduleCountInput = document.querySelector('input[name="mcc_module_count"]');
+			let count = parseInt(moduleCountInput && moduleCountInput.value ? moduleCountInput.value : '1', 10);
+			if (!Number.isFinite(count) || count < 1) count = 1;
+
+			const rows = [];
+			// Cassette Part (2행)
+			rows.push(
+				'<tr>',
+				'	<td rowspan="2">Cassette Part<br>(물류부)</td>',
+				'	<td>CST Load</td>',
+				'	<td><input type="number" name="mcc_time_cst_load" min="0" step="any" style="width: 70px;" value="20"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>CST Unload</td>',
+				'	<td><input type="number" name="mcc_time_cst_unload" min="0" step="any" style="width: 70px;" value="15"></td>',
+				'</tr>'
+			);
+
+			// EFEM Part (7행)
+			rows.push(
+				'<tr>',
+				'	<td rowspan="8">EFEM Part<br>(물류부)</td>',
+				'	<td>Wafer Get<br><span class="op-sub">(CST -> WTR)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_get_cst_wtr" min="0" step="any" style="width: 70px;" value="7"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Wafer Put<br><span class="op-sub">(WTR -> Aligner)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_put_wtr_aligner" min="0" step="any" style="width: 70px;" value="10"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Align &amp; BCR</td>',
+				'	<td><input type="number" name="mcc_time_efem_align_bcr" min="0" step="any" style="width: 70px;" value="25"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Wafer Get<br><span class="op-sub">(Aligner -> WTR)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_get_aligner_wtr" min="0" step="any" style="width: 70px;" value="7"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Wafer Put<br><span class="op-sub">(WTR -> Vision)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_put_wtr_vision" min="0" step="any" style="width: 70px;" value="7"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Wafer Get<br><span class="op-sub">(Vision -> WTR)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_get_vision_wtr" min="0" step="any" style="width: 70px;" value="7"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td>Wafer Put<br><span class="op-sub">(WTR -> CST)</span></td>',
+				'	<td><input type="number" name="mcc_time_efem_put_wtr_cst" min="0" step="any" style="width: 70px;" value="8"></td>',
+				'</tr>',
+				'<tr>',
+				'	<td title="Get이후 해당 모듈에 다른 Wafer를 Put 하는데 걸리는 시간">Wafer Change</td>',
+				'	<td><input type="number" name="mcc_time_efem_wafer_change" min="0" step="any" style="width: 70px;" value="5"></td>',
+				'</tr>'
+			);
+
+			// Vision Part (4행) * count
+			for (let i = 1; i <= count; i++) {
+				const partDefaultName = `Vision${i}`;
+				const idx = i; // 인덱스를 name에 포함
+				rows.push(
+					'<tr>',
+					`	<td rowspan="4"><input type="text" name="mcc_vision${idx}_name" value="${partDefaultName}"><br>(검사부)</td>`,
+					`	<td><span class="vision-label" data-vision-idx="${idx}" data-label-key="align-ready">${partDefaultName} Align Ready</span></td>`,
+					`	<td><input type="number" name="mcc_time_vision${idx}_align_ready" min="0" step="any" style="width: 70px;" value="10"></td>`,
+					'</tr>',
+					'<tr>',
+					`	<td><span class="vision-label" data-vision-idx="${idx}" data-label-key="align">${partDefaultName} Align</span></td>`,
+					`	<td><input type="number" name="mcc_time_vision${idx}_align" min="0" step="any" style="width: 70px;" value="15"></td>`,
+					'</tr>',
+					'<tr>',
+					`	<td><span class="vision-label" data-vision-idx="${idx}" data-label-key="inspection">${partDefaultName} Inspection</span></td>`,
+					`	<td><input type="number" name="mcc_time_vision${idx}_inspection" min="0" step="any" style="width: 70px;" value="300"></td>`,
+					'</tr>',
+					'<tr>',
+					`	<td><span class="vision-label" data-vision-idx="${idx}" data-label-key="unloading-ready">${partDefaultName} Unloading Ready</span></td>`,
+					`	<td><input type="number" name="mcc_time_vision${idx}_unloading_ready" min="0" step="any" style="width: 70px;" value="8"></td>`,
+					'</tr>'
+				);
+			}
+
+			tbody.innerHTML = rows.join('\n');
+			// 기존 값 복원
+			tbody.querySelectorAll('input').forEach(input => {
+				if (input.name && prevValues.hasOwnProperty(input.name)) {
+					input.value = prevValues[input.name];
+				}
+			});
+			applyNumberGuards(tbody);
+			setupVisionNameListeners();
+			updateMccFlowFromForm();
+			// 동작시간 변경 시 TaktTime 갱신
+			tbody.querySelectorAll('input[type="number"]').forEach(input => {
+				input.addEventListener('input', calculateMccCycles);
+				input.addEventListener('blur', calculateMccCycles);
+			});
+		}
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -846,33 +1477,28 @@
             document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`).classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
 
-            // Trigger 탭일 때 preset-section 표시, history-section 숨기기
-            if (tabName === 'trigger') {
-                const historySection = document.querySelector('.history-section');
-                const presetSection = document.querySelector('.preset-section');
-                if (historySection) {
+            const historySection = document.querySelector('.history-section');
+            const presetSection = document.querySelector('.preset-section');
+
+            // MCC / TRIGGER 탭일 때는 히스토리 숨김
+            if (historySection) {
+                if (tabName === 'mcc' || tabName === 'trigger') {
                     historySection.style.display = 'none';
-                }
-                if (presetSection) {
-                    presetSection.style.display = 'block';
-                }
-            } else {
-                // 다른 탭일 때 history-section 표시, preset-section 숨기기
-                const historySection = document.querySelector('.history-section');
-                const presetSection = document.querySelector('.preset-section');
-                if (historySection) {
+                } else {
                     historySection.style.display = 'block';
                 }
-                if (presetSection) {
-                    presetSection.style.display = 'none';
-                }
+            }
+
+            // Preset은 TRIGGER 탭에서만 표시
+            if (presetSection) {
+                presetSection.style.display = (tabName === 'trigger') ? 'block' : 'none';
             }
 
             currentHistoryList = tabName === 'tdi' ? tdiHistoryList : areaHistoryList;
             
             if (tabName === 'trigger') {
                 renderPreset();
-            } else {
+            } else if (tabName === 'tdi' || tabName === 'area') {
                 renderHistory();
             }
         }
@@ -1350,6 +1976,43 @@
             document.querySelectorAll('#triggerCalcForm input').forEach(input => {
                 input.addEventListener('input', calculateTrigger);
             });
+
+			// 모든 number 입력 제약 적용
+			applyNumberGuards(document);
+
+			// MCC: Module 개수 변경 시 테이블 재렌더링
+			const moduleCountInput = document.querySelector('input[name="mcc_module_count"]');
+			if (moduleCountInput) {
+				moduleCountInput.addEventListener('input', () => {
+					renderMccTable();
+				});
+				moduleCountInput.addEventListener('blur', () => {
+					let v = parseInt((moduleCountInput.value || '1'), 10);
+					if (!Number.isFinite(v) || v < 1) v = 1;
+					moduleCountInput.value = String(v);
+					renderMccTable();
+				});
+			}
+
+			// 초기 MCC 테이블 렌더링 및 TaktTime 계산
+			renderMccTable();
+			calculateMccCycles();
+			// 결과표 초기값 동기화
+			const moduleCountOut = document.getElementById('mccResultModuleCount');
+			if (moduleCountOut && moduleCountInput) {
+				moduleCountOut.textContent = moduleCountInput.value || '1';
+				moduleCountInput.addEventListener('input', () => moduleCountOut.textContent = moduleCountInput.value || '1');
+				moduleCountInput.addEventListener('blur', () => moduleCountOut.textContent = moduleCountInput.value || '1');
+			}
+
+			// MCC 폼 값 변경 시 플로우 / TaktTime 업데이트
+			const mccForm = document.getElementById('mccForm');
+			if (mccForm) {
+				mccForm.addEventListener('input', () => {
+					updateMccFlowFromForm();
+					calculateMccCycles();
+				});
+			}
 
             // Trigger Type 초기화 및 계산
             handleTriggerTypeChange();
