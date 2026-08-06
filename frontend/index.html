@@ -693,6 +693,12 @@
                                             step="any" name="area_camera_freq" value="100"></div>
                                     <div class="form-row"><label>Safety Factor [%]</label><input type="number"
                                             step="any" name="area_safety_factor" value="90"></div>
+                                    <div class="form-row"><label>Exposure Time [us]</label><input type="number"
+                                            step="any" name="area_exposure_time" value="50"></div>
+                                    <div class="form-row"><label>Overlap 비율</label><input type="number"
+                                            step="any" name="area_overlap" value="0" min="0" max="1"></div>
+                                    <div class="form-row"><label>Motion Blur 제한 [px]</label><input type="number"
+                                            step="any" name="area_blur_limit" value="0.5" min="0"></div>
                                 </div>
                                 <div>
                                     <div class="form-row"><label>Fov X [pixel]</label><input type="number" step="any"
@@ -701,6 +707,8 @@
                                             name="area_fov_y" value="480"></div>
                                     <div class="form-row"><label>Line Count</label><input type="number" step="any"
                                             name="area_line_count" value="0" readonly disabled></div>
+                                    <div class="form-row"><label>Motion Blur [px]</label><input type="number" step="any"
+                                            name="area_motion_blur" id="area_motion_blur" value="0" readonly disabled></div>
                                 </div>
                             </div>
                         </div>
@@ -1565,8 +1573,22 @@
             const waferAlignDelay = parseFloat(data.area_waferAlign_delay) || 0;
             const waferChangeDelay = parseFloat(data.area_waferChange_delay) || 0;
 
-            const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, (fovY * cameraRes / 1000) * cameraFreq  * (safetyFactor / 100));
-            setMaxScanSpeed('area_max_scan_speed', (fovY * cameraRes / 1000) * cameraFreq * (safetyFactor / 100));
+            const exposureTime = parseFloat(data.area_exposure_time) || 0;
+            const overlap = parseFloat(data.area_overlap) || 0;
+            const blurLimit = parseFloat(data.area_blur_limit) || 0;
+
+            // Frame Rate 기반 최대 속도: v_max_frame = (1-α) × FovY(px) × Res(μm) / 1000(mm) × FrameRate(fps) × Safety/100
+            const maxSpeedFrame = (1 - overlap) * (fovY * cameraRes / 1000) * cameraFreq * (safetyFactor / 100);
+
+            // Blur 기반 최대 속도: v_max_blur = blurLimit(px) × Res(μm) × 1000 / T_exp(us) [mm/s]
+            // blur = v(mm/s) × 1000(μm/mm) × T_exp(us) / 1e6(s) / Res(μm/px)
+            // v_max = blurLimit × Res × 1e6 / (1000 × T_exp) = blurLimit × Res × 1000 / T_exp
+            const maxSpeedBlur = (exposureTime > 0 && blurLimit > 0) ? (blurLimit * cameraRes * 1000 / exposureTime) : Infinity;
+
+            // 두 제약 중 더 엄격한 쪽 적용
+            const effectiveMaxSpeed = Math.min(maxSpeedFrame, maxSpeedBlur);
+            const scanSpeed = Math.min(parseFloat(data.area_scan_speed) || 0, effectiveMaxSpeed);
+            setMaxScanSpeed('area_max_scan_speed', effectiveMaxSpeed);
             validateScanSpeed(document.getElementsByName('area_scan_speed')[0], scanSpeed);
 
             const accelTime = getAccelTime(accelG, scanSpeed);
@@ -1583,12 +1605,18 @@
             const circleScanTime = fullScanTime * 0.9;
             const circleScanUph = 3600 / (circleScanTime + waferChangeDelay);
 
+            // Motion Blur 계산: blur = v_input(mm/s) * T_exp(us) / S_res(μm)
+            // scanSpeed(mm/s) → μm/s = *1000, T_exp(us) → s = /1e6
+            // blur(px) = scanSpeed(mm/s) * 1000(μm/mm) * exposureTime(us) / 1e6(s) / cameraRes(μm/px)
+            const motionBlur = (cameraRes > 0) ? (scanSpeed * 1000 * exposureTime / 1e6) / cameraRes : 0;
+
             // 결과 업데이트
             setElementValue('area_accel_dist', accelDist, true);
             setElementValue('area_accel_time', accelTime, true);
             setElementValue('area_const_dist', constDist, true);
             setElementValue('area_total_scan_dist', totalScanDist, true);
             setElementValue('area_line_count', lineCount, true);
+            setElementValue('area_motion_blur', motionBlur, true);
             setElementValue('area_full_scan_time', fullScanTime);
             setElementValue('area_full_scan_uph', fullScanUph);
             setElementValue('area_circle_scan_time', circleScanTime);
