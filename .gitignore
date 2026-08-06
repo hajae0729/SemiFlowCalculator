@@ -6,6 +6,10 @@
 *.userosscache
 *.sln.docstates
 
+# Build output
+obj/
+bin/
+
 # Python
 __pycache__/
 *.py[cod]
