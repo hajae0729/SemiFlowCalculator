@@ -885,19 +885,39 @@
                             <div class="form-title">Scan Setting</div>
                             <div class="grid2">
                                 <div>
-                                    <div class="form-row"><label>Width [mm]</label><input type="number" step="any"
-                                            name="fss_width" value="310" max="310"></div>
-                                    <div class="form-row"><label>Height [mm]</label><input type="number" step="any"
-                                            name="fss_height" value="310" max="310"></div>
-                                    <div class="form-row"><label>Point Pitch X [μm]</label><input type="number"
-                                            step="any" name="fss_pitch_x" value="100" min="20"></div>
-                                    <div class="form-row"><label>Point Pitch Y [μm]</label><input type="number"
-                                            step="any" name="fss_pitch_y" value="100" min="20"></div>
+                                    <div class="form-row">
+                                        <label>Width [mm]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" step="any" name="fss_width" value="310" max="310" style="width: 70px;">
+                                            <span id="fss_width_limit" style="color: #ff0000; font-size: 0.7em;">&le;310</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <label>Height [mm]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" step="any" name="fss_height" value="310" max="310" style="width: 70px;">
+                                            <span id="fss_height_limit" style="color: #ff0000; font-size: 0.7em;">&le;310</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <label>Point Pitch X [μm]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" step="any" name="fss_pitch_x" value="100" min="20" style="width: 70px;">
+                                            <span id="fss_pitch_x_limit" style="color: #ff0000; font-size: 0.7em;">&ge;20</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <label>Point Pitch Y [μm]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" step="any" name="fss_pitch_y" value="100" min="20" style="width: 70px;">
+                                            <span id="fss_pitch_y_limit" style="color: #ff0000; font-size: 0.7em;">&ge;20</span>
+                                        </div>
+                                    </div>
                                     <div class="form-row">
                                         <label>Measuring Rate [kHz]</label>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <input type="number" name="fss_rate" value="32" max="70" style="width: 70px;">
-                                            <span style="color: #999; font-size: 0.7em;">&le;70</span>
+                                            <span id="fss_rate_limit" style="color: #ff0000; font-size: 0.7em;">&le;70</span>
                                         </div>
                                     </div>
                                 </div>
@@ -913,7 +933,7 @@
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <input type="number" step="any" name="fss_spot_speed" value="0"
                                                 readonly disabled style="width: 70px;">
-                                            <span id="fss_speed_limit" style="color: #999; font-size: 0.7em;">&le;10</span>
+                                            <span id="fss_speed_limit" style="color: #ff0000; font-size: 0.7em;">&le;10</span>
                                         </div>
                                     </div>
                                     <div class="form-row"><label>라인당 시간 [sec]</label><input type="number" step="any"
@@ -1926,26 +1946,8 @@
 
             const warnings = [];
 
-            if (width > 310 || height > 310)
-                warnings.push('측정 영역이 스캔 범위(310mm)를 초과합니다.');
-            if (pitchX > 0 && pitchX < 20)
-                warnings.push('Point Pitch X 최소값은 20μm입니다 (장비 해상도 한계).');
-            if (pitchY > 0 && pitchY < 20)
-                warnings.push('Point Pitch Y 최소값은 20μm입니다.');
-            if (rate > 70)
-                warnings.push('Measuring Rate 최대값은 70kHz입니다.');
-
             const spotSpeed = (pitchX / 1000) * (rate * 1000) / 1000;
             const MAX_JUMP = 10;
-            if (spotSpeed > MAX_JUMP) {
-                const maxPitchAtRate = MAX_JUMP / (rate * 1000) * 1e6;
-                const maxRateAtPitch = (pitchX > 0) ? MAX_JUMP / (pitchX / 1e6) / 1000 : 0;
-                warnings.push(
-                    '스팟 속도(' + spotSpeed.toFixed(1) + ' m/s)가 한계(' + MAX_JUMP + ' m/s)를 초과. ' +
-                    '현재 Rate에서 최대 Pitch: ' + maxPitchAtRate.toFixed(0) + 'μm, ' +
-                    '현재 Pitch에서 최대 Rate: ' + maxRateAtPitch.toFixed(0) + 'kHz'
-                );
-            }
 
             const diagonal = Math.sqrt(width * width + height * height);
             if (diagonal > 310) {
@@ -1955,16 +1957,24 @@
                 );
             }
 
-            const speedLimitSpan = document.getElementById('fss_speed_limit');
-            if (speedLimitSpan) {
-                if (spotSpeed > MAX_JUMP) {
-                    speedLimitSpan.style.color = '#ef4444';
-                    speedLimitSpan.innerHTML = '⚠ 10 m/s 초과!';
+            function setLimitStyle(id, isOver, overText, normalText) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (isOver) {
+                    el.style.color = '#ef4444';
+                    el.innerHTML = '⚠ ' + overText;
                 } else {
-                    speedLimitSpan.style.color = '#999';
-                    speedLimitSpan.innerHTML = '&le;10';
+                    el.style.color = '#ff0000';
+                    el.innerHTML = normalText;
                 }
             }
+
+            setLimitStyle('fss_width_limit', width > 310, '310 초과!', '&le;310');
+            setLimitStyle('fss_height_limit', height > 310, '310 초과!', '&le;310');
+            setLimitStyle('fss_pitch_x_limit', pitchX > 0 && pitchX < 20, '20 미만!', '&ge;20');
+            setLimitStyle('fss_pitch_y_limit', pitchY > 0 && pitchY < 20, '20 미만!', '&ge;20');
+            setLimitStyle('fss_rate_limit', rate > 70, '70 초과!', '&le;70');
+            setLimitStyle('fss_speed_limit', spotSpeed > MAX_JUMP, '10 m/s 초과!', '&le;10');
 
             const warningsDiv = document.getElementById('fss_warnings');
             if (warningsDiv) {
