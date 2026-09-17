@@ -974,7 +974,7 @@
                         <img src="/public/ScanMotion_Image1.png" alt="FSS Diagram"
                             style="width: 100%; max-width: 320px; display: block; margin: 0 auto;">
                     </div>
-                    <div id="fss_warnings" style="min-height: 20px; margin-bottom: 8px; font-size: 0.88rem; color: #ef4444; line-height: 1.5;"></div>
+
                     <div class="output-section">
                         <div class="form-title">Full Scan</div>
                         <div class="output-grid">
@@ -1944,18 +1944,8 @@
             const lineEnd = parseFloat(data.fss_line_end) || 0;
             const waferChange = parseFloat(data.fss_wafer_change) || 0;
 
-            const warnings = [];
-
             const spotSpeed = (pitchX / 1000) * (rate * 1000) / 1000;
             const MAX_JUMP = 10;
-
-            const diagonal = Math.sqrt(width * width + height * height);
-            if (diagonal > 310) {
-                warnings.push(
-                    '측정 영역 대각선(' + diagonal.toFixed(1) + 'mm) > 스캔 영역(310mm). ' +
-                    'Full Scan 모서리가 범위 밖일 수 있습니다.'
-                );
-            }
 
             function setLimitStyle(id, isOver, overText, normalText) {
                 const el = document.getElementById(id);
@@ -1975,11 +1965,6 @@
             setLimitStyle('fss_pitch_y_limit', pitchY > 0 && pitchY < 20, '20 미만!', '&ge;20');
             setLimitStyle('fss_rate_limit', rate > 70, '70 초과!', '&le;70');
             setLimitStyle('fss_speed_limit', spotSpeed > MAX_JUMP, '10 m/s 초과!', '&le;10');
-
-            const warningsDiv = document.getElementById('fss_warnings');
-            if (warningsDiv) {
-                warningsDiv.innerHTML = warnings.map(w => '⚠ ' + w).join('<br>');
-            }
 
             const pitchX_mm = pitchX / 1000;
             const pitchY_mm = pitchY / 1000;
