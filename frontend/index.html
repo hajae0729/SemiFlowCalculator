@@ -470,6 +470,7 @@
 			<button class="tab-button" onclick="switchTab('tdi')">TDI</button>
             <button class="tab-button" onclick="switchTab('area')">AREA</button>
             <button class="tab-button" onclick="switchTab('3d')">3D</button>
+            <button class="tab-button" onclick="switchTab('fss')">FSS</button>
             <button class="tab-button" onclick="switchTab('trigger')">TRIGGER</button>
         </div>
 
@@ -873,6 +874,99 @@
                 </div>
             </div>
         </div>
+        <div id="fss-tab" class="tab-content">
+            <div class="main-flex">
+                <div class="left-panel">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <h2 style="margin-bottom: 0;">FSS Takt Time 계산기</h2>
+                    </div>
+                    <form id="fssCalcForm" autocomplete="off">
+                        <div class="form-section">
+                            <div class="form-title">Scan Setting</div>
+                            <div class="grid2">
+                                <div>
+                                    <div class="form-row"><label>Width [mm]</label><input type="number" step="any"
+                                            name="fss_width" value="310" max="310"></div>
+                                    <div class="form-row"><label>Height [mm]</label><input type="number" step="any"
+                                            name="fss_height" value="310" max="310"></div>
+                                    <div class="form-row"><label>Point Pitch X [μm]</label><input type="number"
+                                            step="any" name="fss_pitch_x" value="100" min="20"></div>
+                                    <div class="form-row"><label>Point Pitch Y [μm]</label><input type="number"
+                                            step="any" name="fss_pitch_y" value="100" min="20"></div>
+                                    <div class="form-row">
+                                        <label>Measuring Rate [kHz]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" name="fss_rate" value="32" max="70" style="width: 70px;">
+                                            <span style="color: #999; font-size: 0.7em;">&le;70</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-row"><label>Horizontal Pixels</label><input type="number" step="any"
+                                            name="fss_h_pixels" value="0" readonly disabled></div>
+                                    <div class="form-row"><label>Vertical Pixels</label><input type="number" step="any"
+                                            name="fss_v_pixels" value="0" readonly disabled></div>
+                                    <div class="form-row"><label>Total Pixels</label><input type="number" step="any"
+                                            name="fss_total_pixels" value="0" readonly disabled></div>
+                                    <div class="form-row">
+                                        <label>스팟 이동 속도 [m/s]</label>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="number" step="any" name="fss_spot_speed" value="0"
+                                                readonly disabled style="width: 70px;">
+                                            <span id="fss_speed_limit" style="color: #999; font-size: 0.7em;">&le;10</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row"><label>라인당 시간 [sec]</label><input type="number" step="any"
+                                            name="fss_line_time" value="0" readonly disabled></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-section">
+                            <div class="form-title">Delay Setting</div>
+                            <div class="grid2">
+                                <div>
+                                    <div class="form-row"><label>Wait at Line Begin [sec]</label><input type="number"
+                                            step="any" name="fss_line_begin" value="0.025"></div>
+                                    <div class="form-row"><label>Wait at Line End [sec]</label><input type="number"
+                                            step="any" name="fss_line_end" value="0.00025"></div>
+                                </div>
+                                <div></div>
+                            </div>
+                        </div>
+                        <div class="form-section">
+                            <div class="form-title">Process Setting</div>
+                            <div class="grid2">
+                                <div>
+                                    <div class="form-row"><label>Wafer Change delay [sec]</label><input type="number"
+                                            step="any" name="fss_wafer_change" value="0"></div>
+                                </div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="right-panel">
+                    <div class="button-row">
+                        <button type="button" onclick="saveFssHistory()">히스토리 저장</button>
+                        <button type="button" onclick="downloadFssPDF()">PDF로 저장</button>
+                    </div>
+                    <div class="motion-svg-wrap">
+                        <img src="/public/ScanMotion_Image1.png" alt="FSS Diagram"
+                            style="width: 100%; max-width: 320px; display: block; margin: 0 auto;">
+                    </div>
+                    <div id="fss_warnings" style="min-height: 20px; margin-bottom: 8px; font-size: 0.88rem; color: #ef4444; line-height: 1.5;"></div>
+                    <div class="output-section">
+                        <div class="form-title">Full Scan</div>
+                        <div class="output-grid">
+                            <div class="output-row"><label>Measure Time [sec]</label><input type="number"
+                                    name="fss_full_time" id="fss_full_time" readonly disabled></div>
+                            <div class="output-row"><label>UPH</label><input type="number" name="fss_full_uph"
+                                    id="fss_full_uph" readonly disabled></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div id="trigger-tab" class="tab-content">
             <div class="trigger-main-flex">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
@@ -961,6 +1055,7 @@
         let tdiHistoryList = [];
         let areaHistoryList = [];
         let threeDHistoryList = [];
+        let fssHistoryList = [];
         let currentHistoryList = tdiHistoryList;
         
         // Preset 데이터
@@ -1623,11 +1718,13 @@
                 currentHistoryList = areaHistoryList;
             } else if (tabName === '3d') {
                 currentHistoryList = threeDHistoryList;
+            } else if (tabName === 'fss') {
+                currentHistoryList = fssHistoryList;
             }
             
             if (tabName === 'trigger') {
                 renderPreset();
-            } else if (tabName === 'tdi' || tabName === 'area' || tabName === '3d') {
+            } else if (tabName === 'tdi' || tabName === 'area' || tabName === '3d' || tabName === 'fss') {
                 renderHistory();
             }
         }
@@ -1814,6 +1911,88 @@
             setElementValue('threeD_circle_uph', circleUph);
         }
 
+        function calculateFSS() {
+            const form = document.getElementById('fssCalcForm');
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            const width = parseFloat(data.fss_width) || 0;
+            const height = parseFloat(data.fss_height) || 0;
+            const pitchX = parseFloat(data.fss_pitch_x) || 0;
+            const pitchY = parseFloat(data.fss_pitch_y) || 0;
+            const rate = parseFloat(data.fss_rate) || 0;
+            const lineBegin = parseFloat(data.fss_line_begin) || 0;
+            const lineEnd = parseFloat(data.fss_line_end) || 0;
+            const waferChange = parseFloat(data.fss_wafer_change) || 0;
+
+            const warnings = [];
+
+            if (width > 310 || height > 310)
+                warnings.push('측정 영역이 스캔 범위(310mm)를 초과합니다.');
+            if (pitchX > 0 && pitchX < 20)
+                warnings.push('Point Pitch X 최소값은 20μm입니다 (장비 해상도 한계).');
+            if (pitchY > 0 && pitchY < 20)
+                warnings.push('Point Pitch Y 최소값은 20μm입니다.');
+            if (rate > 70)
+                warnings.push('Measuring Rate 최대값은 70kHz입니다.');
+
+            const spotSpeed = (pitchX / 1000) * (rate * 1000) / 1000;
+            const MAX_JUMP = 10;
+            if (spotSpeed > MAX_JUMP) {
+                const maxPitchAtRate = MAX_JUMP / (rate * 1000) * 1e6;
+                const maxRateAtPitch = (pitchX > 0) ? MAX_JUMP / (pitchX / 1e6) / 1000 : 0;
+                warnings.push(
+                    '스팟 속도(' + spotSpeed.toFixed(1) + ' m/s)가 한계(' + MAX_JUMP + ' m/s)를 초과. ' +
+                    '현재 Rate에서 최대 Pitch: ' + maxPitchAtRate.toFixed(0) + 'μm, ' +
+                    '현재 Pitch에서 최대 Rate: ' + maxRateAtPitch.toFixed(0) + 'kHz'
+                );
+            }
+
+            const diagonal = Math.sqrt(width * width + height * height);
+            if (diagonal > 310) {
+                warnings.push(
+                    '측정 영역 대각선(' + diagonal.toFixed(1) + 'mm) > 스캔 영역(310mm). ' +
+                    'Full Scan 모서리가 범위 밖일 수 있습니다.'
+                );
+            }
+
+            const speedLimitSpan = document.getElementById('fss_speed_limit');
+            if (speedLimitSpan) {
+                if (spotSpeed > MAX_JUMP) {
+                    speedLimitSpan.style.color = '#ef4444';
+                    speedLimitSpan.innerHTML = '⚠ 10 m/s 초과!';
+                } else {
+                    speedLimitSpan.style.color = '#999';
+                    speedLimitSpan.innerHTML = '&le;10';
+                }
+            }
+
+            const warningsDiv = document.getElementById('fss_warnings');
+            if (warningsDiv) {
+                warningsDiv.innerHTML = warnings.map(w => '⚠ ' + w).join('<br>');
+            }
+
+            const pitchX_mm = pitchX / 1000;
+            const pitchY_mm = pitchY / 1000;
+            const rateHz = rate * 1000;
+
+            const hPixels = (pitchX_mm > 0) ? Math.ceil(width / pitchX_mm) : 0;
+            const vPixels = (pitchY_mm > 0) ? Math.ceil(height / pitchY_mm) : 0;
+            const totalPixels = hPixels * vPixels;
+            const lineTime = (rateHz > 0) ? hPixels / rateHz + lineBegin + lineEnd : 0;
+
+            const fullMeasureTime = vPixels * lineTime;
+            const fullUph = (fullMeasureTime + waferChange > 0)
+                ? 3600 / (fullMeasureTime + waferChange) : 0;
+
+            setElementValue('fss_h_pixels', hPixels, true);
+            setElementValue('fss_v_pixels', vPixels, true);
+            setElementValue('fss_total_pixels', totalPixels, true);
+            setElementValue('fss_spot_speed', spotSpeed, true);
+            setElementValue('fss_line_time', lineTime, true);
+            setElementValue('fss_full_time', fullMeasureTime);
+            setElementValue('fss_full_uph', fullUph);
+        }
+
         function saveHistory() {
             const form = document.getElementById('calcForm');
             const data = Object.fromEntries(new FormData(form).entries());
@@ -1939,13 +2118,50 @@
             });
         }
 
+        function saveFssHistory() {
+            const form = document.getElementById('fssCalcForm');
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            calculateFSS();
+
+            const scan_time = document.getElementById('fss_full_time').value;
+            const uph = document.getElementById('fss_full_uph').value;
+
+            const historyItem = {
+                datetime: new Date().toLocaleString('ko-KR'),
+                fss_width: data.fss_width,
+                fss_height: data.fss_height,
+                fss_pitch_x: data.fss_pitch_x,
+                fss_pitch_y: data.fss_pitch_y,
+                fss_rate: data.fss_rate,
+                fss_line_begin: data.fss_line_begin,
+                fss_line_end: data.fss_line_end,
+                fss_wafer_change: data.fss_wafer_change,
+                scan_time: scan_time,
+                uph: uph
+            };
+
+            fssHistoryList.push(historyItem);
+            if (currentHistoryList === fssHistoryList) {
+                renderHistory();
+            }
+
+            fetch('/api/save_fss_history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...data, fss_full_time: scan_time, fss_full_uph: uph })
+            }).catch(error => {
+                console.log('서버 히스토리 저장 실패 (로컬 모드):', error);
+            });
+        }
+
         function renderHistory() {
             const tbody = document.getElementById('historyTable').querySelector('tbody');
             tbody.innerHTML = currentHistoryList.map((h, i) => {
-                const col1 = h.accel_g || h.area_accel_g || h.threeD_wafer_size || '-';
-                const col2 = h.scan_speed || h.area_scan_speed || h.threeD_res_x || '-';
-                const col3 = h.wafer_size || h.area_wafer_size || h.threeD_trigger_res || '-';
-                const col4 = h.camera_res || h.area_camera_res || h.threeD_fov || '-';
+                const col1 = h.accel_g || h.area_accel_g || h.threeD_wafer_size || h.fss_width || '-';
+                const col2 = h.scan_speed || h.area_scan_speed || h.threeD_res_x || h.fss_pitch_x || '-';
+                const col3 = h.wafer_size || h.area_wafer_size || h.threeD_trigger_res || h.fss_pitch_y || '-';
+                const col4 = h.camera_res || h.area_camera_res || h.threeD_fov || h.fss_rate || '-';
                 return `<tr data-idx="${i}" onclick="loadHistoryItem(${i})" style="cursor: pointer;"><td>${h.datetime}</td><td>${col1}</td><td>${col2}</td><td>${col3}</td><td>${col4}</td><td>${h.scan_time}</td><td>${h.uph}</td></tr>`;
             }).join('');
         }
@@ -2017,6 +2233,17 @@
                 setElementValue('threeD_wafer_change', history.threeD_wafer_change, true);
 
                 calculate3D();
+            } else if (activeTab && activeTab.textContent === 'FSS') {
+                setElementValue('fss_width', history.fss_width, true);
+                setElementValue('fss_height', history.fss_height, true);
+                setElementValue('fss_pitch_x', history.fss_pitch_x, true);
+                setElementValue('fss_pitch_y', history.fss_pitch_y, true);
+                setElementValue('fss_rate', history.fss_rate, true);
+                setElementValue('fss_line_begin', history.fss_line_begin, true);
+                setElementValue('fss_line_end', history.fss_line_end, true);
+                setElementValue('fss_wafer_change', history.fss_wafer_change, true);
+
+                calculateFSS();
             }
         }
 
@@ -2113,6 +2340,10 @@
 
         function downloadThreeDPDF() {
             downloadPDFCommon('threeDCalcForm', '3d-tab', '/api/download_3d_pdf', '3d_result.pdf');
+        }
+
+        function downloadFssPDF() {
+            downloadPDFCommon('fssCalcForm', 'fss-tab', '/api/download_fss_pdf', 'fss_result.pdf');
         }
 
         function openTeamsChat() {
@@ -2240,6 +2471,17 @@
                 setInputValue('threeD_wafer_change', h.threeD_wafer_change);
 
                 setTimeout(() => calculate3D(), 100);
+            } else if (currentHistoryList === fssHistoryList) {
+                setInputValue('fss_width', h.fss_width);
+                setInputValue('fss_height', h.fss_height);
+                setInputValue('fss_pitch_x', h.fss_pitch_x);
+                setInputValue('fss_pitch_y', h.fss_pitch_y);
+                setInputValue('fss_rate', h.fss_rate);
+                setInputValue('fss_line_begin', h.fss_line_begin);
+                setInputValue('fss_line_end', h.fss_line_end);
+                setInputValue('fss_wafer_change', h.fss_wafer_change);
+
+                setTimeout(() => calculateFSS(), 100);
             }
         }
 
@@ -2278,6 +2520,10 @@
 
             document.querySelectorAll('#threeDCalcForm input').forEach(input => {
                 input.addEventListener('input', calculate3D);
+            });
+
+            document.querySelectorAll('#fssCalcForm input').forEach(input => {
+                input.addEventListener('input', calculateFSS);
             });
 
             // Trigger 폼 이벤트 리스너
@@ -2330,6 +2576,7 @@
             calculateTDI();
             calculateArea();
             calculate3D();
+            calculateFSS();
 
             // 히스토리 클릭 이벤트
             const tbody = document.getElementById('historyTable').querySelector('tbody');
